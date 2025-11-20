@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../contexts/AppContext';
+import { useMarketData } from '../contexts/MarketDataContext';
 import { STRATEGIES } from '../utils/strategies';
 import type { TradeLog } from '../types';
 
@@ -10,20 +11,29 @@ const TRADING_PAIRS = [
 ];
 
 const LOG_MESSAGES = [
-  (pair: string) => `Scanning ${pair} pair... Volatility detected`,
-  (pair: string) => `Arbitrage opportunity detected on ${pair} (0.04s window)`,
-  (pair: string) => `EXECUTING BUY order for ${pair}`,
-  (pair: string) => `EXECUTING SELL order for ${pair}`,
+  (pair: string, price?: number) => 
+    price ? `Scanning ${pair} at $${price.toFixed(2)}... Volatility detected` : `Scanning ${pair} pair... Volatility detected`,
+  (pair: string, price?: number) => 
+    price ? `Arbitrage opportunity detected on ${pair} at $${price.toFixed(2)} (0.04s window)` : `Arbitrage opportunity detected on ${pair} (0.04s window)`,
+  (pair: string, price?: number) => 
+    price ? `EXECUTING BUY order for ${pair} @ $${price.toFixed(2)}` : `EXECUTING BUY order for ${pair}`,
+  (pair: string, price?: number) => 
+    price ? `EXECUTING SELL order for ${pair} @ $${price.toFixed(2)}` : `EXECUTING SELL order for ${pair}`,
   (pair: string) => `Order filled on ${pair} - Profit locked`,
-  (pair: string) => `Analyzing ${pair} trend patterns...`,
-  (pair: string) => `${pair} support level identified at current price`,
-  (pair: string) => `${pair} resistance breakthrough detected`,
+  (pair: string, price?: number) => 
+    price ? `Analyzing ${pair} trend at $${price.toFixed(2)}...` : `Analyzing ${pair} trend patterns...`,
+  (pair: string, price?: number) => 
+    price ? `${pair} support level identified at $${price.toFixed(2)}` : `${pair} support level identified at current price`,
+  (pair: string, price?: number) => 
+    price ? `${pair} resistance breakthrough at $${price.toFixed(2)}` : `${pair} resistance breakthrough detected`,
   (pair: string) => `Hedging parameters adjusted for ${pair}`,
-  (pair: string) => `Stop-loss triggered on ${pair} position`,
+  (pair: string, price?: number) => 
+    price ? `Stop-loss triggered on ${pair} at $${price.toFixed(2)}` : `Stop-loss triggered on ${pair} position`,
 ];
 
 const ActiveLogs: React.FC = () => {
   const { userProfile } = useApp();
+  const { currentPrice, config } = useMarketData();
   const [logs, setLogs] = useState<TradeLog[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +53,11 @@ const ActiveLogs: React.FC = () => {
 
     const generateLog = () => {
       const pair = TRADING_PAIRS[Math.floor(Math.random() * TRADING_PAIRS.length)];
-      const message = LOG_MESSAGES[Math.floor(Math.random() * LOG_MESSAGES.length)](pair);
+      const useRealPrice = pair === config.symbol.replace('USDT', '/USDT') && currentPrice > 0;
+      const price = useRealPrice ? currentPrice : undefined;
+      
+      const messageGenerator = LOG_MESSAGES[Math.floor(Math.random() * LOG_MESSAGES.length)];
+      const message = messageGenerator(pair, price);
       
       const newLog: TradeLog = {
         id: Date.now().toString() + Math.random(),
@@ -69,7 +83,7 @@ const ActiveLogs: React.FC = () => {
     const timer = setInterval(generateLog, interval);
 
     return () => clearInterval(timer);
-  }, [userProfile.activeStrategy]);
+  }, [userProfile.activeStrategy, currentPrice, config.symbol]);
 
   const getLogColor = (action: string) => {
     switch (action) {

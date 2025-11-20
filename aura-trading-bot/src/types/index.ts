@@ -59,3 +59,24 @@ export interface Alert {
   message: string;
   timestamp: Date;
 }
+
+// Market Data Types
+export interface Candle {
+  openTime: number;
+  closeTime: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
+
+export type DataMode = 'real' | 'simulated';
+
+export interface MarketDataConfig {
+  symbol: string;
+  timeframe: string;
+  mode: DataMode;
+}

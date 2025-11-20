@@ -161,6 +161,85 @@ aura-trading-bot/
 
 ## Configuration
 
+### Real-Time Crypto Data Integration
+
+AURA Trading Bot now supports **real-time cryptocurrency market data** sourced from Binance, alongside the existing simulated data mode.
+
+#### Data Modes
+
+The application supports two data modes:
+
+1. **Real Data Mode**: Live cryptocurrency market data via WebSocket connection to Binance
+   - Real-time candlestick updates for BTC/USDT (1-minute timeframe)
+   - Automatic reconnection on connection loss
+   - REST API fallback for initial historical data (last 100 candles)
+   
+2. **Simulated Data Mode** (Default): Simulated market data for testing and demonstration
+   - No external network dependency
+   - Realistic price movement simulation
+   - Consistent behavior across environments
+
+#### Configuration
+
+Set the data mode using the `VITE_USE_REAL_DATA` environment variable:
+
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit .env and set:
+VITE_USE_REAL_DATA=true   # For real-time Binance data
+# OR
+VITE_USE_REAL_DATA=false  # For simulated data (default)
+```
+
+Alternatively, you can toggle between modes directly in the UI using the toggle button in the chart header.
+
+#### Exchange & Data Source
+
+- **Exchange**: Binance (public WebSocket endpoints)
+- **Default Symbol**: BTC/USDT
+- **Default Timeframe**: 1 minute
+- **WebSocket Endpoint**: `wss://stream.binance.com:9443/ws`
+- **REST API**: `https://api.binance.com/api/v3/klines`
+
+#### Features
+
+- **Live Candlestick Chart**: Real-time price updates using TradingView Lightweight Charts
+- **Connection Status Indicator**: Visual feedback (LIVE/SIMULATED/CONNECTING/ERROR)
+- **Auto-Reconnection**: Exponential backoff retry logic (up to 10 attempts)
+- **Graceful Fallback**: Automatic switch to simulated mode on connection failure
+- **Real Price Integration**: Trading logs optionally display actual market prices
+
+#### UI Indicators
+
+The TradingChart component displays:
+- Current symbol and timeframe (e.g., "BTCUSDT · 1m")
+- Real-time price (e.g., "$45,234.56")
+- Data mode toggle button ("📡 Real Data" or "🎲 Simulated")
+- Connection status with colored indicator:
+  - 🟢 Green (LIVE): Connected and receiving data
+  - 🟡 Yellow (CONNECTING): Attempting to connect
+  - 🔴 Red (ERROR): Connection failed
+  - ⚫ Gray (DISCONNECTED): Not connected
+
+#### Technical Implementation
+
+- **Data Layer**: `src/data/marketData.ts` - WebSocket management and data normalization
+- **Context**: `src/contexts/MarketDataContext.tsx` - React state management for market data
+- **Chart**: `src/components/TradingChart.tsx` - Lightweight Charts integration
+- **Types**: `src/types/index.ts` - Candle, ConnectionStatus, DataMode types
+
+#### Important Notes
+
+⚠️ **For Demonstration Only**: This integration is for demonstration and educational purposes only. Not intended for actual trading.
+
+⚠️ **No Financial Advice**: This application does not provide financial advice and should not be used to make trading decisions.
+
+⚠️ **Rate Limits**: The Binance public API has rate limits. Avoid excessive requests.
+
+⚠️ **Network Dependency**: Real data mode requires a stable internet connection. Use simulated mode for offline development.
+
 ### User Tiers
 User tiers are randomly assigned during onboarding for demo purposes. In production, this would query a backend API.
 
