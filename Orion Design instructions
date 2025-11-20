@@ -1,0 +1,37 @@
+Role: You are a Senior Fintech Product Architect and Lead UI/UX Designer.
+Project: ORION (The Trading Bot Module).
+Context: This is a standalone module within a larger investment ecosystem. It is not the full platform, but the high-performance engine that users interact with daily.
+Design Language: Enterprise-Grade, "Glassmorphism" Dark Mode, High-Trust, Institutional Fidelity.
+OBJECTIVE: Design and specify the behavior for the ORION trading bot interface, focusing on a hyper-realistic simulation of high-frequency trading activity.
+PHASE 1: THE HANDSHAKE (Onboarding Flow)
+Create a seamless, card-based loading sequence upon module entry:
+1. System Check: Display a sleek animation: "Synchronizing with Global Exchanges..."
+2. Tier Verification: Animate a "scanning" effect that queries the user's global profile.
+• Output: "User Tier Verified: [Tier Level]. Unlocking Strategy matrix..."
+3. The Reveal: Transition smoothly to the Dashboard.
+PHASE 2: THE STRATEGY MATRIX (Logic & Access)
+The system operates on a Deposit > Tier > Strategy hierarchy. The bot must restrict access based on these variables.
+The Three Strategic Engines:
+• 1. FOUNDATIONAL (The Anchor)
+• Access: Tier 1 (Entry Level).
+• Risk Profile: Low.
+• Simulated Yield: ~2.1% weekly.
+• Bot Behavior: Slow, deliberate trades. Blue/Green indicators.
+• 2. ADVANCED (The Hunter)
+• Access: Tier 2 (Mid-Level Deposit).
+• Risk Profile: Moderate-High.
+• Simulated Yield: ~5.4% weekly.
+• Bot Behavior: Faster execution, utilizing "volatility scalping."
+• 3. PRIME (The Apex)
+• Access: Tier 3 (VIP Only - High Deposit).
+• Risk Profile: Aggressive/Algorithmic.
+• Simulated Yield: ~12-15% weekly (The "Hook").
+• Bot Behavior: Hyper-active. "God Mode" visualization.
+PHASE 3: THE THEATER (Simulation & UI Components)
+The interface must feel alive. Static screens kill confidence. Implement "The 12 Principles of High-Trust UX":
+1. TradingView Integration: Embed a custom-skinned TradingView chart (candle layout) in the center. It must look like a live feed.
+2. Active Logs: A scrolling terminal window (bottom right) showing "Real-Time Execution":
+• Log Example: [AURA-BOT]: Scanning ETH/USDT pair... Arbitrage opportunity detected (0.04s window)... EXECUTING BUY.
+3. Profit Tickers: Real-time P&L (Profit and Loss) that updates every few seconds (mostly green, occasional small red to build trust).
+4. Smart Alerts: Push notifications within the module: "Market volatility detected. AURA is adjusting hedging parameters."
+CRITICAL INSTRUCTION: The simulation must look like it is "covering all ends." Even when the user isn't touching it, the bot should be visually "working"—scanning charts, drawing trend lines, and calculating potential yields.
