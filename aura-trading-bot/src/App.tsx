@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AppProvider, useApp } from './contexts/AppContext';
+import { MarketDataProvider } from './contexts/MarketDataContext';
 import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import './App.css';
@@ -18,7 +19,9 @@ function AppContent() {
 function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <MarketDataProvider>
+        <AppContent />
+      </MarketDataProvider>
     </AppProvider>
   );
 }
