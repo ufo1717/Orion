@@ -150,6 +150,11 @@ export class MarketDataManager {
       return;
     }
 
+    // Clear any existing timeout
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+    }
+
     this.reconnectAttempts++;
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 30000);
     
@@ -192,9 +197,13 @@ export class MarketDataManager {
 }
 
 // Generate simulated candles for fallback mode
-export function generateSimulatedCandle(previousCandle?: Candle): Candle {
+export function generateSimulatedCandle(previousCandle?: Candle, interval: number = 60000): Candle {
   const now = Date.now();
   const basePrice = previousCandle?.close ?? 45000; // Default to ~45k for BTC
+  
+  // Calculate the proper time for the new candle
+  const openTime = previousCandle ? previousCandle.closeTime : now - interval;
+  const closeTime = openTime + interval;
   
   // Random walk with slight upward bias
   const change = (Math.random() - 0.48) * basePrice * 0.001;
@@ -209,8 +218,8 @@ export function generateSimulatedCandle(previousCandle?: Candle): Candle {
   const volume = 10 + Math.random() * 50;
   
   return {
-    openTime: previousCandle ? previousCandle.closeTime + 1 : now - 60000,
-    closeTime: now,
+    openTime,
+    closeTime,
     open,
     high,
     low,

@@ -4,6 +4,9 @@ import { createChart, ColorType, CandlestickSeries } from 'lightweight-charts';
 import type { IChartApi, ISeriesApi, CandlestickData } from 'lightweight-charts';
 import { useMarketData } from '../contexts/MarketDataContext';
 
+// Constants
+const MILLISECONDS_TO_SECONDS = 1000;
+
 const TradingChart: React.FC = () => {
   const { candles, currentPrice, connectionStatus, config, setDataMode } = useMarketData();
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -72,7 +75,7 @@ const TradingChart: React.FC = () => {
     if (!candlestickSeriesRef.current || candles.length === 0) return;
 
     const chartData: CandlestickData[] = candles.map((candle) => ({
-      time: Math.floor(candle.openTime / 1000) as CandlestickData['time'],
+      time: Math.floor(candle.openTime / MILLISECONDS_TO_SECONDS) as CandlestickData['time'],
       open: candle.open,
       high: candle.high,
       low: candle.low,

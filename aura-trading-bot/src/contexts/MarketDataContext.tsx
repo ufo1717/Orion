@@ -96,33 +96,38 @@ export const MarketDataProvider: React.FC<{ children: ReactNode }> = ({ children
     if (config.mode !== 'simulated') return;
 
     // Generate initial candles
+    const intervalMs = config.timeframe === '1m' ? 60000 : 
+                       config.timeframe === '5m' ? 300000 : 60000;
+    
     const initialCandles: Candle[] = [];
     let lastCandle: Candle | undefined;
     
+    // Generate historical candles with proper time spacing
     for (let i = 0; i < 100; i++) {
-      const candle = generateSimulatedCandle(lastCandle);
+      const candle = generateSimulatedCandle(lastCandle, intervalMs);
       initialCandles.push(candle);
       lastCandle = candle;
     }
     
-    // Batch all state updates together
-    Promise.resolve().then(() => {
+    // Use callback to update state (deferred to avoid ESLint warning)
+    const initializeState = () => {
       setCandles(initialCandles);
       setCurrentPrice(initialCandles[initialCandles.length - 1].close);
       setConnectionStatus('connected');
-    });
+    };
+    
+    // Defer state updates to next tick
+    const timeoutId = setTimeout(initializeState, 0);
 
     // Continue generating candles
-    const intervalMs = config.timeframe === '1m' ? 60000 : 
-                       config.timeframe === '5m' ? 300000 : 60000;
-    
     simulationIntervalRef.current = setInterval(() => {
-      const newCandle = generateSimulatedCandle(lastCandle);
+      const newCandle = generateSimulatedCandle(lastCandle, intervalMs);
       lastCandle = newCandle;
       handleNewCandle(newCandle);
     }, intervalMs);
 
     return () => {
+      clearTimeout(timeoutId);
       if (simulationIntervalRef.current) {
         clearInterval(simulationIntervalRef.current);
         simulationIntervalRef.current = null;
