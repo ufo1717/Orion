@@ -181,9 +181,6 @@ export const MarketDataProvider: React.FC<{ children: ReactNode }> = ({ children
     const rotationManager = new ChartRotationManager((pair: TradingPair) => {
       setCurrentPair(pair);
       
-      // Update config to match the new pair
-      setConfig(prev => ({ ...prev, symbol: pair.symbol }));
-      
       // Load the candles for this pair
       const pairData = candleDataBySymbol.current.get(pair.symbol);
       if (pairData && pairData.length > 0) {
