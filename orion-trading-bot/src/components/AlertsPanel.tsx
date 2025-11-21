@@ -7,18 +7,20 @@ import {
   selectWeightedRandomAlert,
 } from '../data/alertTemplates';
 import { createTimingManager } from '../utils/timingManager';
+import { useMarketRegime } from '../contexts/MarketRegimeContext';
+
+// Alert timing configuration
+const ALERT_BASE_INTERVAL_MS = 8000; // 8 seconds
 
 const AlertsPanel: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const { regimeConfig, volatilityScore } = useMarketRegime();
   
   // Create alert message tracker instance that persists across renders (60-minute window)
   const alertTracker = useMemo(() => new AlertMessageTracker(60), []);
   
-  // Track volatility for dynamic timing (simulated for alerts) - use ref to avoid effect restart
-  const volatilityScoreRef = useRef(0.5);
-  
   // Create timing manager for alerts with different configuration
-  const timingManagerRef = useRef(createTimingManager(8000, { // 8 second base
+  const timingManagerRef = useRef(createTimingManager(ALERT_BASE_INTERVAL_MS, {
     variancePercent: 40, // Higher variance for alerts
     burstProbability: 0.12, // Less frequent bursts than logs
     burstMinCount: 2,
@@ -29,21 +31,12 @@ const AlertsPanel: React.FC = () => {
     slowdownMultiplier: 3.0, // Longer slowdowns
   }));
 
-  // Update volatility periodically for dynamic timing
-  useEffect(() => {
-    const updateVolatility = () => {
-      // Simulate volatility changes - in real scenario based on actual price data
-      volatilityScoreRef.current = Math.random();
-    };
-    
-    const volatilityTimer = setInterval(updateVolatility, 30000); // Update every 30 seconds
-    updateVolatility(); // Initial update
-    
-    return () => clearInterval(volatilityTimer);
-  }, []);
-
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
+    
+    // Apply regime activity multiplier to alert timing
+    const regimeAdjustedBaseInterval = ALERT_BASE_INTERVAL_MS / regimeConfig.activityMultiplier;
+    timingManagerRef.current.updateBaseInterval(regimeAdjustedBaseInterval);
     
     const generateAlert = () => {
       // Try to find a non-repeated alert
@@ -73,7 +66,7 @@ const AlertsPanel: React.FC = () => {
       });
       
       // Schedule next alert with randomized interval
-      const nextInterval = timingManagerRef.current.getNextInterval(volatilityScoreRef.current);
+      const nextInterval = timingManagerRef.current.getNextInterval(volatilityScore);
       timeoutId = setTimeout(generateAlert, nextInterval);
     };
 
@@ -86,7 +79,7 @@ const AlertsPanel: React.FC = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [alertTracker]);
+  }, [alertTracker, regimeConfig, volatilityScore]);
 
   const getAlertStyle = (type: Alert['type']) => {
     switch (type) {

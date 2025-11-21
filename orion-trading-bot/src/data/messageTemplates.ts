@@ -12,6 +12,7 @@ export type MessageCategory =
 
 export type TimeOfDay = 'morning' | 'midday' | 'evening' | 'night';
 export type MarketCondition = 'volatile' | 'calm' | 'trending_up' | 'trending_down';
+export type MarketRegime = 'bull' | 'bear' | 'sideways' | 'volatile';
 
 export interface MessageTemplate {
   category: MessageCategory;
@@ -20,6 +21,7 @@ export interface MessageTemplate {
   conditions?: {
     timeOfDay?: TimeOfDay[];
     marketCondition?: MarketCondition[];
+    regime?: MarketRegime[]; // New: regime-based filtering
   };
 }
 
@@ -64,7 +66,17 @@ const marketScanningMessages: MessageTemplate[] = [
   {
     category: 'market_scanning',
     generator: (pair) => `${pair} market depth analysis: Strong buy-side pressure`,
-    conditions: { marketCondition: ['trending_up'] },
+    conditions: { marketCondition: ['trending_up'], regime: ['bull'] },
+  },
+  {
+    category: 'market_scanning',
+    generator: (pair) => `${pair} sell-side pressure building - Distribution detected`,
+    conditions: { marketCondition: ['trending_down'], regime: ['bear'] },
+  },
+  {
+    category: 'market_scanning',
+    generator: (pair) => `${pair} range-bound trading pattern confirmed`,
+    conditions: { regime: ['sideways'] },
   },
   {
     category: 'market_scanning',
@@ -295,7 +307,14 @@ const technicalAnalysisMessages: MessageTemplate[] = [
     generator: (pair, price) => price
       ? `${pair} golden cross formation confirmed at $${price.toFixed(2)}`
       : `Bullish crossover detected on ${pair} - MA convergence`,
-    conditions: { marketCondition: ['trending_up'] },
+    conditions: { marketCondition: ['trending_up'], regime: ['bull'] },
+  },
+  {
+    category: 'technical_analysis',
+    generator: (pair, price) => price
+      ? `${pair} death cross formation detected at $${price.toFixed(2)}`
+      : `Bearish crossover detected on ${pair} - MA divergence`,
+    conditions: { marketCondition: ['trending_down'], regime: ['bear'] },
   },
   {
     category: 'technical_analysis',
@@ -612,12 +631,23 @@ export const ALL_MESSAGE_TEMPLATES: MessageTemplate[] = [
   ...advancedSignalsMessages,
 ];
 
-// Helper function to get time of day
+// Helper function to get time of day based on UTC hours
 export const getTimeOfDay = (): TimeOfDay => {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 17) return 'midday';
-  if (hour >= 17 && hour < 22) return 'evening';
+  const hourUTC = new Date().getUTCHours();
+  
+  // Asian session (00:00-07:00 UTC)
+  if (hourUTC >= 0 && hourUTC < 7) return 'night';
+  
+  // European morning (07:00-12:00 UTC)
+  if (hourUTC >= 7 && hourUTC < 12) return 'morning';
+  
+  // European afternoon + US session start (12:00-17:00 UTC)
+  if (hourUTC >= 12 && hourUTC < 17) return 'midday';
+  
+  // US session (17:00-22:00 UTC)
+  if (hourUTC >= 17 && hourUTC < 22) return 'evening';
+  
+  // Late US / Low activity (22:00-00:00 UTC)
   return 'night';
 };
 
@@ -627,8 +657,30 @@ const VOLATILITY_LOW_THRESHOLD = 0.3;
 const TRENDING_PROBABILITY = 0.5;
 const TRENDING_UP_PROBABILITY = 0.75;
 
-// Helper function to determine market condition based on recent price action
-export const getMarketCondition = (volatilityScore: number = 0.5): MarketCondition => {
+// Helper function to determine market condition based on regime and volatility
+export const getMarketCondition = (
+  volatilityScore: number = 0.5,
+  regime?: MarketRegime
+): MarketCondition => {
+  // If regime is provided, use it to influence market condition
+  if (regime) {
+    switch (regime) {
+      case 'bull':
+        // Bull regime favors trending up
+        return Math.random() > 0.3 ? 'trending_up' : 'volatile';
+      case 'bear':
+        // Bear regime favors trending down
+        return Math.random() > 0.3 ? 'trending_down' : 'volatile';
+      case 'sideways':
+        // Sideways regime favors calm markets
+        return Math.random() > 0.3 ? 'calm' : 'volatile';
+      case 'volatile':
+        // Volatile regime is obviously volatile
+        return 'volatile';
+    }
+  }
+  
+  // Fallback to volatility-based determination (original logic)
   const random = Math.random();
   
   // High volatility scenarios
@@ -650,21 +702,23 @@ export const getMarketCondition = (volatilityScore: number = 0.5): MarketConditi
   return 'volatile';
 };
 
-// Filter messages based on conditions
+// Filter messages based on conditions including regime
 export const filterMessagesByConditions = (
   messages: MessageTemplate[],
   timeOfDay: TimeOfDay,
-  marketCondition: MarketCondition
+  marketCondition: MarketCondition,
+  regime?: MarketRegime
 ): MessageTemplate[] => {
   return messages.filter((msg) => {
     if (!msg.conditions) return true;
     
-    const { timeOfDay: timeCondition, marketCondition: marketConditionArr } = msg.conditions;
+    const { timeOfDay: timeCondition, marketCondition: marketConditionArr, regime: regimeArr } = msg.conditions;
     
     const timeMatch = !timeCondition || timeCondition.includes(timeOfDay);
     const marketMatch = !marketConditionArr || marketConditionArr.includes(marketCondition);
+    const regimeMatch = !regimeArr || !regime || regimeArr.includes(regime);
     
-    return timeMatch && marketMatch;
+    return timeMatch && marketMatch && regimeMatch;
   });
 };
 

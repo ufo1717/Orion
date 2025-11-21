@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../contexts/AppContext';
 import { useMarketData } from '../contexts/MarketDataContext';
+import { useMarketRegime } from '../contexts/MarketRegimeContext';
 import { STRATEGIES } from '../utils/strategies';
 import type { TradeLog } from '../types';
 import {
@@ -22,14 +23,12 @@ const TRADING_PAIRS = [
 const ActiveLogs: React.FC = () => {
   const { userProfile } = useApp();
   const { currentPrice, config } = useMarketData();
+  const { currentRegime, regimeConfig, volatilityScore } = useMarketRegime();
   const [logs, setLogs] = useState<TradeLog[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
   
   // Create message tracker instance that persists across renders
   const messageTracker = useMemo(() => new MessageTracker(20), []);
-  
-  // Track volatility for market condition
-  const [volatilityScore, setVolatilityScore] = useState(0.5);
   
   // Create timing manager instance that persists across renders
   const timingManagerRef = useRef(createTimingManager(1000, {
@@ -47,17 +46,6 @@ const ActiveLogs: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [logs]);
-  
-  // Update volatility score periodically
-  useEffect(() => {
-    const updateVolatility = () => {
-      // Simulate volatility changes - in real scenario this would be based on actual price data
-      setVolatilityScore(Math.random());
-    };
-    
-    const volatilityTimer = setInterval(updateVolatility, 30000); // Update every 30 seconds
-    return () => clearInterval(volatilityTimer);
-  }, []);
 
   useEffect(() => {
     if (!userProfile.activeStrategy) return;
@@ -65,8 +53,11 @@ const ActiveLogs: React.FC = () => {
     const strategy = STRATEGIES[userProfile.activeStrategy];
     const baseInterval = strategy.speed === 'fast' ? 800 : strategy.speed === 'medium' ? 1500 : 3000;
     
-    // Update timing manager with new base interval
-    timingManagerRef.current.updateBaseInterval(baseInterval);
+    // Apply regime activity multiplier to base interval
+    const regimeAdjustedInterval = baseInterval / regimeConfig.activityMultiplier;
+    
+    // Update timing manager with regime-adjusted interval
+    timingManagerRef.current.updateBaseInterval(regimeAdjustedInterval);
     
     let timeoutId: ReturnType<typeof setTimeout>;
 
@@ -75,15 +66,16 @@ const ActiveLogs: React.FC = () => {
       const useRealPrice = pair === config.symbol.replace('USDT', '/USDT') && currentPrice > 0;
       const price = useRealPrice ? currentPrice : undefined;
       
-      // Get current time and market conditions
+      // Get current time and market conditions (regime-aware)
       const timeOfDay = getTimeOfDay();
-      const marketCondition = getMarketCondition(volatilityScore);
+      const marketCondition = getMarketCondition(volatilityScore, currentRegime);
       
-      // Filter messages based on conditions
+      // Filter messages based on conditions including regime
       const availableMessages = filterMessagesByConditions(
         ALL_MESSAGE_TEMPLATES,
         timeOfDay,
-        marketCondition
+        marketCondition,
+        currentRegime
       );
       
       // Try to find a non-repeated message
@@ -102,13 +94,17 @@ const ActiveLogs: React.FC = () => {
       // Track the message
       messageTracker.addMessage(message);
       
+      // Determine if this trade is a win based on regime win rate
+      const isWin = Math.random() < regimeConfig.winRate;
+      const hasProfit = Math.random() > 0.65; // 35% of trades show profit
+      
       const newLog: TradeLog = {
         id: Date.now().toString() + Math.random(),
         timestamp: new Date(),
         pair,
         action: message.includes('BUY') ? 'BUY' : message.includes('SELL') ? 'SELL' : message.includes('EXECUTING') ? 'EXECUTE' : 'SCAN',
         message,
-        profit: Math.random() > 0.7 ? parseFloat((Math.random() * 150).toFixed(2)) : undefined,
+        profit: (hasProfit && isWin) ? parseFloat((Math.random() * 150).toFixed(2)) : undefined,
       };
 
       setLogs((prev) => {
@@ -116,7 +112,7 @@ const ActiveLogs: React.FC = () => {
         return updated.slice(-50); // Keep only last 50 logs
       });
       
-      // Schedule next log with randomized interval
+      // Schedule next log with randomized interval (includes regime multiplier via base interval)
       const nextInterval = timingManagerRef.current.getNextInterval(volatilityScore);
       timeoutId = setTimeout(generateLog, nextInterval);
     };
@@ -135,7 +131,7 @@ const ActiveLogs: React.FC = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [userProfile.activeStrategy, currentPrice, config.symbol, messageTracker, volatilityScore]);
+  }, [userProfile.activeStrategy, currentPrice, config.symbol, messageTracker, volatilityScore, currentRegime, regimeConfig]);
 
   const getLogColor = (action: string) => {
     switch (action) {
