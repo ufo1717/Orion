@@ -7,6 +7,7 @@ import {
   selectWeightedRandomAlert,
 } from '../data/alertTemplates';
 import { createTimingManager } from '../utils/timingManager';
+import { createMarketRegimeManager, type MarketRegimeConfig } from '../utils/marketRegimeManager';
 
 const AlertsPanel: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -14,7 +15,15 @@ const AlertsPanel: React.FC = () => {
   // Create alert message tracker instance that persists across renders (60-minute window)
   const alertTracker = useMemo(() => new AlertMessageTracker(60), []);
   
-  // Track volatility for dynamic timing (simulated for alerts) - use ref to avoid effect restart
+  // Create market regime manager instance (shared state with ActiveLogs via singleton pattern)
+  const regimeManager = useMemo(() => createMarketRegimeManager('sideways'), []);
+  
+  // Track current market regime
+  const [regimeConfig, setRegimeConfig] = useState<MarketRegimeConfig>(
+    regimeManager.getCurrentConfig()
+  );
+  
+  // Track volatility for dynamic timing (influenced by regime)
   const volatilityScoreRef = useRef(0.5);
   
   // Create timing manager for alerts with different configuration
@@ -28,22 +37,43 @@ const AlertsPanel: React.FC = () => {
     slowdownProbability: 0.15, // More frequent slowdowns
     slowdownMultiplier: 3.0, // Longer slowdowns
   }));
+  
+  // Start market regime manager
+  useEffect(() => {
+    regimeManager.start((_regime, config) => {
+      setRegimeConfig(config);
+      volatilityScoreRef.current = config.volatilityScore;
+    });
+    
+    return () => {
+      regimeManager.stop();
+    };
+  }, [regimeManager]);
 
-  // Update volatility periodically for dynamic timing
+  // Update volatility periodically (within regime bounds)
   useEffect(() => {
     const updateVolatility = () => {
-      // Simulate volatility changes - in real scenario based on actual price data
-      volatilityScoreRef.current = Math.random();
+      // Vary volatility around the regime's base volatility (±0.15)
+      const baseVolatility = regimeConfig.volatilityScore;
+      const variance = 0.15;
+      const newVolatility = Math.max(0, Math.min(1, 
+        baseVolatility + (Math.random() - 0.5) * variance * 2
+      ));
+      volatilityScoreRef.current = newVolatility;
     };
     
     const volatilityTimer = setInterval(updateVolatility, 30000); // Update every 30 seconds
     updateVolatility(); // Initial update
     
     return () => clearInterval(volatilityTimer);
-  }, []);
+  }, [regimeConfig]);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
+    
+    // Apply regime activity multiplier to alert timing
+    const regimeAdjustedBaseInterval = 8000 / regimeConfig.activityMultiplier;
+    timingManagerRef.current.updateBaseInterval(regimeAdjustedBaseInterval);
     
     const generateAlert = () => {
       // Try to find a non-repeated alert
@@ -86,7 +116,7 @@ const AlertsPanel: React.FC = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [alertTracker]);
+  }, [alertTracker, regimeConfig]);
 
   const getAlertStyle = (type: Alert['type']) => {
     switch (type) {

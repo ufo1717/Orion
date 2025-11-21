@@ -11,8 +11,10 @@ import {
   getMarketCondition,
   filterMessagesByConditions,
   selectWeightedRandom,
+  type MarketRegime,
 } from '../data/messageTemplates';
 import { createTimingManager } from '../utils/timingManager';
+import { createMarketRegimeManager, type MarketRegimeConfig } from '../utils/marketRegimeManager';
 
 const TRADING_PAIRS = [
   'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'ADA/USDT',
@@ -28,7 +30,16 @@ const ActiveLogs: React.FC = () => {
   // Create message tracker instance that persists across renders
   const messageTracker = useMemo(() => new MessageTracker(20), []);
   
-  // Track volatility for market condition
+  // Create market regime manager instance
+  const regimeManager = useMemo(() => createMarketRegimeManager('sideways'), []);
+  
+  // Track current market regime and config
+  const [currentRegime, setCurrentRegime] = useState<MarketRegime>('sideways');
+  const [regimeConfig, setRegimeConfig] = useState<MarketRegimeConfig>(
+    regimeManager.getCurrentConfig()
+  );
+  
+  // Track volatility for market condition (now influenced by regime)
   const [volatilityScore, setVolatilityScore] = useState(0.5);
   
   // Create timing manager instance that persists across renders
@@ -48,16 +59,35 @@ const ActiveLogs: React.FC = () => {
     scrollToBottom();
   }, [logs]);
   
-  // Update volatility score periodically
+  // Start market regime manager
+  useEffect(() => {
+    regimeManager.start((regime, config) => {
+      setCurrentRegime(regime);
+      setRegimeConfig(config);
+      setVolatilityScore(config.volatilityScore);
+      console.log(`Market regime changed to: ${regime}`, config);
+    });
+    
+    return () => {
+      regimeManager.stop();
+    };
+  }, [regimeManager]);
+  
+  // Update volatility score periodically (within regime bounds)
   useEffect(() => {
     const updateVolatility = () => {
-      // Simulate volatility changes - in real scenario this would be based on actual price data
-      setVolatilityScore(Math.random());
+      // Vary volatility around the regime's base volatility (±0.15)
+      const baseVolatility = regimeConfig.volatilityScore;
+      const variance = 0.15;
+      const newVolatility = Math.max(0, Math.min(1, 
+        baseVolatility + (Math.random() - 0.5) * variance * 2
+      ));
+      setVolatilityScore(newVolatility);
     };
     
     const volatilityTimer = setInterval(updateVolatility, 30000); // Update every 30 seconds
     return () => clearInterval(volatilityTimer);
-  }, []);
+  }, [regimeConfig]);
 
   useEffect(() => {
     if (!userProfile.activeStrategy) return;
@@ -65,8 +95,11 @@ const ActiveLogs: React.FC = () => {
     const strategy = STRATEGIES[userProfile.activeStrategy];
     const baseInterval = strategy.speed === 'fast' ? 800 : strategy.speed === 'medium' ? 1500 : 3000;
     
-    // Update timing manager with new base interval
-    timingManagerRef.current.updateBaseInterval(baseInterval);
+    // Apply regime activity multiplier to base interval
+    const regimeAdjustedInterval = baseInterval / regimeConfig.activityMultiplier;
+    
+    // Update timing manager with regime-adjusted interval
+    timingManagerRef.current.updateBaseInterval(regimeAdjustedInterval);
     
     let timeoutId: ReturnType<typeof setTimeout>;
 
@@ -75,15 +108,16 @@ const ActiveLogs: React.FC = () => {
       const useRealPrice = pair === config.symbol.replace('USDT', '/USDT') && currentPrice > 0;
       const price = useRealPrice ? currentPrice : undefined;
       
-      // Get current time and market conditions
+      // Get current time and market conditions (regime-aware)
       const timeOfDay = getTimeOfDay();
-      const marketCondition = getMarketCondition(volatilityScore);
+      const marketCondition = getMarketCondition(volatilityScore, currentRegime);
       
-      // Filter messages based on conditions
+      // Filter messages based on conditions including regime
       const availableMessages = filterMessagesByConditions(
         ALL_MESSAGE_TEMPLATES,
         timeOfDay,
-        marketCondition
+        marketCondition,
+        currentRegime
       );
       
       // Try to find a non-repeated message
@@ -102,13 +136,17 @@ const ActiveLogs: React.FC = () => {
       // Track the message
       messageTracker.addMessage(message);
       
+      // Determine if this trade is a win based on regime win rate
+      const isWin = Math.random() < regimeConfig.winRate;
+      const hasProfit = Math.random() > 0.65; // 35% of trades show profit
+      
       const newLog: TradeLog = {
         id: Date.now().toString() + Math.random(),
         timestamp: new Date(),
         pair,
         action: message.includes('BUY') ? 'BUY' : message.includes('SELL') ? 'SELL' : message.includes('EXECUTING') ? 'EXECUTE' : 'SCAN',
         message,
-        profit: Math.random() > 0.7 ? parseFloat((Math.random() * 150).toFixed(2)) : undefined,
+        profit: (hasProfit && isWin) ? parseFloat((Math.random() * 150).toFixed(2)) : undefined,
       };
 
       setLogs((prev) => {
@@ -116,7 +154,7 @@ const ActiveLogs: React.FC = () => {
         return updated.slice(-50); // Keep only last 50 logs
       });
       
-      // Schedule next log with randomized interval
+      // Schedule next log with randomized interval (includes regime multiplier via base interval)
       const nextInterval = timingManagerRef.current.getNextInterval(volatilityScore);
       timeoutId = setTimeout(generateLog, nextInterval);
     };
@@ -135,7 +173,7 @@ const ActiveLogs: React.FC = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [userProfile.activeStrategy, currentPrice, config.symbol, messageTracker, volatilityScore]);
+  }, [userProfile.activeStrategy, currentPrice, config.symbol, messageTracker, volatilityScore, currentRegime, regimeConfig]);
 
   const getLogColor = (action: string) => {
     switch (action) {

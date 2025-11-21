@@ -34,23 +34,44 @@ export interface TimingState {
 }
 
 /**
- * Time-of-day multipliers based on simulated market activity
- * Morning (5-12): High activity - 0.8x (faster)
- * Midday (12-17): Peak activity - 0.7x (fastest)
- * Evening (17-22): Moderate activity - 1.0x (normal)
- * Night (22-5): Low activity - 1.5x (slower)
+ * Time-of-day multipliers based on UTC trading hours (global market activity)
+ * 
+ * Key trading sessions (UTC):
+ * - Asian session: 00:00-08:00 UTC - Moderate activity (1.1x)
+ * - European session: 07:00-16:00 UTC - High activity (0.85x - faster)
+ * - US session: 13:00-22:00 UTC - Peak activity (0.7x - fastest)
+ * - Overlap (US+EU): 13:00-16:00 UTC - Maximum activity (0.65x - very fast)
+ * - Low activity: 22:00-00:00 UTC - Slow (1.4x)
+ * 
+ * Times are intentionally overlapping to simulate realistic market transitions
  */
 export const getTimeOfDayMultiplier = (): number => {
-  const hour = new Date().getHours();
+  const now = new Date();
+  const hourUTC = now.getUTCHours();
   
-  if (hour >= 5 && hour < 12) {
-    return 0.8; // Morning - higher activity
-  } else if (hour >= 12 && hour < 17) {
-    return 0.7; // Midday - peak activity
-  } else if (hour >= 17 && hour < 22) {
-    return 1.0; // Evening - normal
-  } else {
-    return 1.5; // Night - lower activity
+  // US+European overlap (13:00-16:00 UTC) - Maximum activity
+  if (hourUTC >= 13 && hourUTC < 16) {
+    return 0.65; // Very fast - peak global liquidity
+  }
+  // US session start/European afternoon (16:00-19:00 UTC) - High activity
+  else if (hourUTC >= 16 && hourUTC < 19) {
+    return 0.75; // Fast - US market in full swing
+  }
+  // US session late/close (19:00-22:00 UTC) - High activity
+  else if (hourUTC >= 19 && hourUTC < 22) {
+    return 0.8; // Fast - still active
+  }
+  // European session start (07:00-13:00 UTC) - High activity
+  else if (hourUTC >= 7 && hourUTC < 13) {
+    return 0.85; // Fast - European markets
+  }
+  // Asian session (00:00-07:00 UTC) - Moderate activity
+  else if (hourUTC >= 0 && hourUTC < 7) {
+    return 1.1; // Slightly slower - Asian markets
+  }
+  // Low activity period (22:00-00:00 UTC) - Between US close and Asian open
+  else {
+    return 1.4; // Slower - global liquidity dip
   }
 };
 
