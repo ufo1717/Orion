@@ -1,34 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../contexts/AppContext';
 import { useMarketData } from '../contexts/MarketDataContext';
 import { STRATEGIES } from '../utils/strategies';
 import type { TradeLog } from '../types';
+import {
+  ALL_MESSAGE_TEMPLATES,
+  MessageTracker,
+  getTimeOfDay,
+  getMarketCondition,
+  filterMessagesByConditions,
+  selectWeightedRandom,
+} from '../data/messageTemplates';
 
 const TRADING_PAIRS = [
   'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'ADA/USDT',
   'XRP/USDT', 'DOT/USDT', 'AVAX/USDT', 'MATIC/USDT', 'LINK/USDT'
-];
-
-const LOG_MESSAGES = [
-  (pair: string, price?: number) => 
-    price ? `Scanning ${pair} at $${price.toFixed(2)}... Volatility detected` : `Scanning ${pair} pair... Volatility detected`,
-  (pair: string, price?: number) => 
-    price ? `Arbitrage opportunity detected on ${pair} at $${price.toFixed(2)} (0.04s window)` : `Arbitrage opportunity detected on ${pair} (0.04s window)`,
-  (pair: string, price?: number) => 
-    price ? `EXECUTING BUY order for ${pair} @ $${price.toFixed(2)}` : `EXECUTING BUY order for ${pair}`,
-  (pair: string, price?: number) => 
-    price ? `EXECUTING SELL order for ${pair} @ $${price.toFixed(2)}` : `EXECUTING SELL order for ${pair}`,
-  (pair: string) => `Order filled on ${pair} - Profit locked`,
-  (pair: string, price?: number) => 
-    price ? `Analyzing ${pair} trend at $${price.toFixed(2)}...` : `Analyzing ${pair} trend patterns...`,
-  (pair: string, price?: number) => 
-    price ? `${pair} support level identified at $${price.toFixed(2)}` : `${pair} support level identified at current price`,
-  (pair: string, price?: number) => 
-    price ? `${pair} resistance breakthrough at $${price.toFixed(2)}` : `${pair} resistance breakthrough detected`,
-  (pair: string) => `Hedging parameters adjusted for ${pair}`,
-  (pair: string, price?: number) => 
-    price ? `Stop-loss triggered on ${pair} at $${price.toFixed(2)}` : `Stop-loss triggered on ${pair} position`,
 ];
 
 const ActiveLogs: React.FC = () => {
@@ -36,6 +23,12 @@ const ActiveLogs: React.FC = () => {
   const { currentPrice, config } = useMarketData();
   const [logs, setLogs] = useState<TradeLog[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
+  
+  // Create message tracker instance that persists across renders
+  const messageTracker = useMemo(() => new MessageTracker(20), []);
+  
+  // Track volatility for market condition
+  const [volatilityScore, setVolatilityScore] = useState(0.5);
 
   const scrollToBottom = () => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,6 +37,17 @@ const ActiveLogs: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [logs]);
+  
+  // Update volatility score periodically
+  useEffect(() => {
+    const updateVolatility = () => {
+      // Simulate volatility changes - in real scenario this would be based on actual price data
+      setVolatilityScore(Math.random());
+    };
+    
+    const volatilityTimer = setInterval(updateVolatility, 30000); // Update every 30 seconds
+    return () => clearInterval(volatilityTimer);
+  }, []);
 
   useEffect(() => {
     if (!userProfile.activeStrategy) return;
@@ -56,8 +60,32 @@ const ActiveLogs: React.FC = () => {
       const useRealPrice = pair === config.symbol.replace('USDT', '/USDT') && currentPrice > 0;
       const price = useRealPrice ? currentPrice : undefined;
       
-      const messageGenerator = LOG_MESSAGES[Math.floor(Math.random() * LOG_MESSAGES.length)];
-      const message = messageGenerator(pair, price);
+      // Get current time and market conditions
+      const timeOfDay = getTimeOfDay();
+      const marketCondition = getMarketCondition(volatilityScore);
+      
+      // Filter messages based on conditions
+      const availableMessages = filterMessagesByConditions(
+        ALL_MESSAGE_TEMPLATES,
+        timeOfDay,
+        marketCondition
+      );
+      
+      // Try to find a non-repeated message
+      let selectedTemplate = selectWeightedRandom(availableMessages);
+      let message = selectedTemplate.generator(pair, price);
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      // Try to avoid recently used messages
+      while (messageTracker.isRecentlyUsed(message) && attempts < maxAttempts) {
+        selectedTemplate = selectWeightedRandom(availableMessages);
+        message = selectedTemplate.generator(pair, price);
+        attempts++;
+      }
+      
+      // Track the message
+      messageTracker.addMessage(message);
       
       const newLog: TradeLog = {
         id: Date.now().toString() + Math.random(),
@@ -83,7 +111,7 @@ const ActiveLogs: React.FC = () => {
     const timer = setInterval(generateLog, interval);
 
     return () => clearInterval(timer);
-  }, [userProfile.activeStrategy, currentPrice, config.symbol]);
+  }, [userProfile.activeStrategy, currentPrice, config.symbol, messageTracker, volatilityScore]);
 
   const getLogColor = (action: string) => {
     switch (action) {
