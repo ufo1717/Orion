@@ -1,28 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Alert } from '../types';
-
-const ALERT_MESSAGES = [
-  { type: 'info' as const, message: 'Market volatility detected. ORION is adjusting hedging parameters.' },
-  { type: 'success' as const, message: 'Trade executed successfully. Position secured at optimal entry.' },
-  { type: 'info' as const, message: 'Scanning for arbitrage opportunities across 15 exchanges.' },
-  { type: 'warning' as const, message: 'High volatility period. Risk management protocols engaged.' },
-  { type: 'success' as const, message: 'Profit target reached. Partial position closed.' },
-  { type: 'info' as const, message: 'Neural network detected bullish pattern formation.' },
-  { type: 'info' as const, message: 'Rebalancing portfolio allocation based on market conditions.' },
-  { type: 'success' as const, message: 'Stop-loss adjusted to lock in profits.' },
-];
+import {
+  ALERT_TEMPLATES,
+  AlertMessageTracker,
+  selectWeightedRandomAlert,
+} from '../data/alertTemplates';
 
 const AlertsPanel: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  
+  // Create alert message tracker instance that persists across renders
+  const alertTracker = useMemo(() => new AlertMessageTracker(10), []);
 
   useEffect(() => {
     const generateAlert = () => {
-      const alertTemplate = ALERT_MESSAGES[Math.floor(Math.random() * ALERT_MESSAGES.length)];
+      // Try to find a non-repeated alert
+      let selectedAlert = selectWeightedRandomAlert(ALERT_TEMPLATES);
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      // Try to avoid recently used alerts
+      while (alertTracker.isRecentlyUsed(selectedAlert.message) && attempts < maxAttempts) {
+        selectedAlert = selectWeightedRandomAlert(ALERT_TEMPLATES);
+        attempts++;
+      }
+      
+      // Track the alert
+      alertTracker.addAlert(selectedAlert.message);
+      
       const newAlert: Alert = {
         id: Date.now().toString() + Math.random(),
-        type: alertTemplate.type,
-        message: alertTemplate.message,
+        type: selectedAlert.type,
+        message: selectedAlert.message,
         timestamp: new Date(),
       };
 
@@ -39,7 +49,7 @@ const AlertsPanel: React.FC = () => {
     const interval = setInterval(generateAlert, 8000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [alertTracker]);
 
   const getAlertStyle = (type: Alert['type']) => {
     switch (type) {
