@@ -195,35 +195,3 @@ export class MarketDataManager {
     }
   }
 }
-
-// Generate simulated candles for fallback mode
-export function generateSimulatedCandle(previousCandle?: Candle, interval: number = 60000, defaultBasePrice: number = 45000): Candle {
-  const now = Date.now();
-  const basePrice = previousCandle?.close ?? defaultBasePrice;
-  
-  // Calculate the proper time for the new candle
-  const openTime = previousCandle ? previousCandle.closeTime : now - interval;
-  const closeTime = openTime + interval;
-  
-  // Random walk with slight upward bias
-  const change = (Math.random() - 0.48) * basePrice * 0.001;
-  const close = basePrice + change;
-  
-  // Generate OHLC with realistic relationships
-  const volatility = Math.random() * basePrice * 0.0008;
-  const high = Math.max(basePrice, close) + volatility;
-  const low = Math.min(basePrice, close) - volatility;
-  const open = basePrice;
-  
-  const volume = 10 + Math.random() * 50;
-  
-  return {
-    openTime,
-    closeTime,
-    open,
-    high,
-    low,
-    close,
-    volume,
-  };
-}

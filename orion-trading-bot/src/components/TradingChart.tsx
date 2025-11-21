@@ -8,7 +8,7 @@ import { useMarketData } from '../contexts/MarketDataContext';
 const MILLISECONDS_TO_SECONDS = 1000;
 
 const TradingChart: React.FC = () => {
-  const { candles, currentPrice, connectionStatus, config, setDataMode, currentPair, chartRotationEnabled, setChartRotationEnabled } = useMarketData();
+  const { candles, currentPrice, connectionStatus, config, currentPair, chartRotationEnabled, setChartRotationEnabled } = useMarketData();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -104,23 +104,16 @@ const TradingChart: React.FC = () => {
   };
 
   const getStatusText = () => {
-    if (config.mode === 'simulated') {
-      return 'SIMULATED';
-    }
     switch (connectionStatus) {
       case 'connected':
         return 'LIVE';
       case 'connecting':
         return 'CONNECTING';
       case 'error':
-        return 'ERROR';
+        return 'NOT AVAILABLE';
       default:
         return 'DISCONNECTED';
     }
-  };
-
-  const toggleMode = () => {
-    setDataMode(config.mode === 'real' ? 'simulated' : 'real');
   };
 
   const toggleRotation = () => {
@@ -147,21 +140,18 @@ const TradingChart: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {config.mode === 'simulated' && (
-              <button
-                onClick={toggleRotation}
-                className="text-xs px-3 py-1 rounded-full glass-card hover:bg-white/10 transition-colors"
-                title={chartRotationEnabled ? 'Disable chart rotation' : 'Enable chart rotation'}
-              >
-                {chartRotationEnabled ? '🔄 Auto-Rotate' : '⏸️ Paused'}
-              </button>
-            )}
             <button
-              onClick={toggleMode}
+              onClick={toggleRotation}
               className="text-xs px-3 py-1 rounded-full glass-card hover:bg-white/10 transition-colors"
+              title={chartRotationEnabled ? 'Disable chart rotation' : 'Enable chart rotation'}
             >
-              {config.mode === 'real' ? '📡 Real Data' : '🎲 Simulated'}
+              {chartRotationEnabled ? '🔄 Auto-Rotate' : '⏸️ Paused'}
             </button>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs px-3 py-1 rounded-full glass-card text-green-400">
+                📡 Real Data
+              </span>
+            </div>
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 ${getStatusColor()} rounded-full ${connectionStatus === 'connected' ? 'animate-pulse' : ''}`} />
               <span className={`text-sm ${connectionStatus === 'connected' ? 'text-green-500' : connectionStatus === 'error' ? 'text-red-500' : 'text-gray-500'}`}>

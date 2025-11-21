@@ -73,10 +73,6 @@ export interface Candle {
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'error';
 
-export type DataMode = 'real' | 'simulated';
-
 export interface MarketDataConfig {
-  symbol: string;
   timeframe: string;
-  mode: DataMode;
 }

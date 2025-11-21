@@ -4,6 +4,7 @@ import { useApp } from '../contexts/AppContext';
 import { useMarketData } from '../contexts/MarketDataContext';
 import { useMarketRegime } from '../contexts/MarketRegimeContext';
 import { STRATEGIES } from '../utils/strategies';
+import { TRADING_PAIRS } from '../utils/chartRotation';
 import type { TradeLog } from '../types';
 import {
   ALL_MESSAGE_TEMPLATES,
@@ -15,14 +16,9 @@ import {
 } from '../data/messageTemplates';
 import { createTimingManager } from '../utils/timingManager';
 
-const TRADING_PAIRS = [
-  'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'ADA/USDT',
-  'XRP/USDT', 'DOT/USDT', 'AVAX/USDT', 'MATIC/USDT', 'LINK/USDT'
-];
-
 const ActiveLogs: React.FC = () => {
   const { userProfile } = useApp();
-  const { currentPrice, config } = useMarketData();
+  const { getPriceForSymbol } = useMarketData();
   const { currentRegime, regimeConfig, volatilityScore } = useMarketRegime();
   const [logs, setLogs] = useState<TradeLog[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -62,9 +58,13 @@ const ActiveLogs: React.FC = () => {
     let timeoutId: ReturnType<typeof setTimeout>;
 
     const generateLog = () => {
-      const pair = TRADING_PAIRS[Math.floor(Math.random() * TRADING_PAIRS.length)];
-      const useRealPrice = pair === config.symbol.replace('USDT', '/USDT') && currentPrice > 0;
-      const price = useRealPrice ? currentPrice : undefined;
+      // Select a random trading pair
+      const pairIndex = Math.floor(Math.random() * TRADING_PAIRS.length);
+      const tradingPair = TRADING_PAIRS[pairIndex];
+      const pair = tradingPair.displayName;
+      
+      // Get the real-time price for this symbol
+      const price = getPriceForSymbol(tradingPair.symbol);
       
       // Get current time and market conditions (regime-aware)
       const timeOfDay = getTimeOfDay();
@@ -80,14 +80,14 @@ const ActiveLogs: React.FC = () => {
       
       // Try to find a non-repeated message
       let selectedTemplate = selectWeightedRandom(availableMessages);
-      let message = selectedTemplate.generator(pair, price);
+      let message = selectedTemplate.generator(pair, price > 0 ? price : undefined);
       let attempts = 0;
       const maxAttempts = 10;
       
       // Try to avoid recently used messages
       while (messageTracker.isRecentlyUsed(message) && attempts < maxAttempts) {
         selectedTemplate = selectWeightedRandom(availableMessages);
-        message = selectedTemplate.generator(pair, price);
+        message = selectedTemplate.generator(pair, price > 0 ? price : undefined);
         attempts++;
       }
       
@@ -131,7 +131,7 @@ const ActiveLogs: React.FC = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [userProfile.activeStrategy, currentPrice, config.symbol, messageTracker, volatilityScore, currentRegime, regimeConfig]);
+  }, [userProfile.activeStrategy, getPriceForSymbol, messageTracker, volatilityScore, currentRegime, regimeConfig]);
 
   const getLogColor = (action: string) => {
     switch (action) {
