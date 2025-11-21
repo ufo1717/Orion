@@ -5,6 +5,9 @@
 
 import { createTimingManager, getTimeOfDayMultiplier, getMarketConditionMultiplier } from './timingManager';
 
+// Use the same similarity threshold as timingManager
+const SIMILARITY_THRESHOLD = 0.15;
+
 console.log('=== ORION Timing Manager Validation ===\n');
 
 // Test 1: Basic variance test
@@ -48,7 +51,7 @@ let maxSimilarSequence = 1;
 let currentSequence = 1;
 for (let i = 1; i < intervals2.length; i++) {
   const ratio = Math.abs(intervals2[i] - intervals2[i - 1]) / Math.max(intervals2[i], intervals2[i - 1]);
-  if (ratio < 0.15) { // Similar within 15%
+  if (ratio < SIMILARITY_THRESHOLD) {
     currentSequence++;
     maxSimilarSequence = Math.max(maxSimilarSequence, currentSequence);
   } else {

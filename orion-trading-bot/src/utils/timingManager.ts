@@ -8,6 +8,10 @@
  * - Prevention of predictable patterns (no 3+ consistent intervals)
  */
 
+// Constants
+const MIN_INTERVAL_MS = 50;
+const SIMILARITY_THRESHOLD = 0.15; // 15% similarity threshold for pattern detection
+
 export interface TimingConfig {
   baseInterval: number;        // Base interval in milliseconds
   variancePercent?: number;     // Percentage variance (default: 30)
@@ -54,16 +58,20 @@ export const getTimeOfDayMultiplier = (): number => {
  * Get market condition multiplier based on volatility
  * High volatility = faster intervals
  * Low volatility = slower intervals
+ * 
+ * @param volatilityScore - Score between 0 and 1 (will be clamped to this range)
  */
 export const getMarketConditionMultiplier = (volatilityScore: number): number => {
-  // Volatility score 0-1
+  // Clamp volatility score to 0-1 range
+  const clampedScore = Math.max(0, Math.min(1, volatilityScore));
+  
   // High volatility (>0.7) = 0.8x faster
   // Medium volatility (0.3-0.7) = 1.0x normal
   // Low volatility (<0.3) = 1.3x slower
   
-  if (volatilityScore > 0.7) {
+  if (clampedScore > 0.7) {
     return 0.8;
-  } else if (volatilityScore < 0.3) {
+  } else if (clampedScore < 0.3) {
     return 1.3;
   } else {
     return 1.0;
@@ -71,11 +79,11 @@ export const getMarketConditionMultiplier = (volatilityScore: number): number =>
 };
 
 /**
- * Check if two intervals are "similar" (within 15% of each other)
+ * Check if two intervals are "similar" (within SIMILARITY_THRESHOLD of each other)
  */
 const areSimilarIntervals = (interval1: number, interval2: number): boolean => {
   const ratio = Math.abs(interval1 - interval2) / Math.max(interval1, interval2);
-  return ratio < 0.15; // Within 15% is considered "similar"
+  return ratio < SIMILARITY_THRESHOLD;
 };
 
 /**
@@ -177,8 +185,8 @@ export class TimingManager {
     }
     this.state.lastTimestamp = Date.now();
 
-    // Ensure minimum interval of 50ms
-    return Math.max(50, Math.round(interval));
+    // Ensure minimum interval
+    return Math.max(MIN_INTERVAL_MS, Math.round(interval));
   }
 
   /**

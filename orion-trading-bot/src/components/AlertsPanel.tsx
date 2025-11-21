@@ -14,8 +14,8 @@ const AlertsPanel: React.FC = () => {
   // Create alert message tracker instance that persists across renders (60-minute window)
   const alertTracker = useMemo(() => new AlertMessageTracker(60), []);
   
-  // Track volatility for dynamic timing (simulated for alerts)
-  const [volatilityScore, setVolatilityScore] = useState(0.5);
+  // Track volatility for dynamic timing (simulated for alerts) - use ref to avoid effect restart
+  const volatilityScoreRef = useRef(0.5);
   
   // Create timing manager for alerts with different configuration
   const timingManagerRef = useRef(createTimingManager(8000, { // 8 second base
@@ -33,7 +33,7 @@ const AlertsPanel: React.FC = () => {
   useEffect(() => {
     const updateVolatility = () => {
       // Simulate volatility changes - in real scenario based on actual price data
-      setVolatilityScore(Math.random());
+      volatilityScoreRef.current = Math.random();
     };
     
     const volatilityTimer = setInterval(updateVolatility, 30000); // Update every 30 seconds
@@ -73,7 +73,7 @@ const AlertsPanel: React.FC = () => {
       });
       
       // Schedule next alert with randomized interval
-      const nextInterval = timingManagerRef.current.getNextInterval(volatilityScore);
+      const nextInterval = timingManagerRef.current.getNextInterval(volatilityScoreRef.current);
       timeoutId = setTimeout(generateAlert, nextInterval);
     };
 
@@ -86,7 +86,7 @@ const AlertsPanel: React.FC = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [alertTracker, volatilityScore]);
+  }, [alertTracker]);
 
   const getAlertStyle = (type: Alert['type']) => {
     switch (type) {
