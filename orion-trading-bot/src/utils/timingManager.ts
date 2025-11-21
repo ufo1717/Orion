@@ -114,11 +114,13 @@ export class TimingManager {
    */
   getNextInterval(volatilityScore: number = 0.5): number {
     let interval: number;
+    let isBurstInterval = false;
 
     // Check if we're in a burst
     if (this.state.inBurst && this.state.burstRemaining > 0) {
       interval = this.getBurstInterval();
       this.state.burstRemaining--;
+      isBurstInterval = true;
       
       if (this.state.burstRemaining === 0) {
         this.state.inBurst = false;
@@ -133,6 +135,7 @@ export class TimingManager {
         );
         interval = this.getBurstInterval();
         this.state.burstRemaining--;
+        isBurstInterval = true;
       } else if (Math.random() < this.config.slowdownProbability) {
         // Occasional slowdown
         interval = this.getSlowdownInterval();
@@ -141,31 +144,37 @@ export class TimingManager {
         interval = this.getVariedInterval();
       }
 
-      // Apply time-of-day multiplier
-      if (this.config.timeOfDayEnabled) {
+      // Apply time-of-day multiplier (not during bursts)
+      if (!isBurstInterval && this.config.timeOfDayEnabled) {
         interval *= getTimeOfDayMultiplier();
       }
 
-      // Apply market condition multiplier
-      interval *= getMarketConditionMultiplier(volatilityScore);
+      // Apply market condition multiplier (not during bursts)
+      if (!isBurstInterval) {
+        interval *= getMarketConditionMultiplier(volatilityScore);
+      }
 
-      // Prevent 3+ consistent intervals in a row
-      if (areSimilarIntervals(interval, this.state.lastInterval)) {
-        this.state.consistentCount++;
-        
-        if (this.state.consistentCount >= 2) {
-          // Force a different interval (add or subtract 25-50% randomly)
-          const adjustment = (0.25 + Math.random() * 0.25) * (Math.random() > 0.5 ? 1 : -1);
-          interval *= (1 + adjustment);
+      // Prevent 3+ consistent intervals in a row (not during bursts)
+      if (!isBurstInterval && this.state.lastInterval > 0) {
+        if (areSimilarIntervals(interval, this.state.lastInterval)) {
+          this.state.consistentCount++;
+          
+          if (this.state.consistentCount >= 2) {
+            // Force a different interval (add or subtract 25-50% randomly)
+            const adjustment = (0.25 + Math.random() * 0.25) * (Math.random() > 0.5 ? 1 : -1);
+            interval *= (1 + adjustment);
+            this.state.consistentCount = 0;
+          }
+        } else {
           this.state.consistentCount = 0;
         }
-      } else {
-        this.state.consistentCount = 0;
       }
     }
 
-    // Update state
-    this.state.lastInterval = interval;
+    // Update state (only track non-burst intervals for pattern prevention)
+    if (!isBurstInterval) {
+      this.state.lastInterval = interval;
+    }
     this.state.lastTimestamp = Date.now();
 
     // Ensure minimum interval of 50ms
