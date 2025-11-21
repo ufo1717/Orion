@@ -72,7 +72,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
               transition={{ duration: 2, repeat: Infinity }}
               className="text-6xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent"
             >
-              AURA
+              ORION
             </motion.div>
           </motion.div>
         )}

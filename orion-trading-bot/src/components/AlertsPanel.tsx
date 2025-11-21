@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Alert } from '../types';
 
 const ALERT_MESSAGES = [
-  { type: 'info' as const, message: 'Market volatility detected. AURA is adjusting hedging parameters.' },
+  { type: 'info' as const, message: 'Market volatility detected. ORION is adjusting hedging parameters.' },
   { type: 'success' as const, message: 'Trade executed successfully. Position secured at optimal entry.' },
   { type: 'info' as const, message: 'Scanning for arbitrage opportunities across 15 exchanges.' },
   { type: 'warning' as const, message: 'High volatility period. Risk management protocols engaged.' },

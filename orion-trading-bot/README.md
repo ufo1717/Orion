@@ -1,12 +1,12 @@
-# AURA Trading Bot Module
+# ORION Trading Bot Module
 
 An enterprise-grade, glassmorphism dark mode trading bot interface with hyper-realistic simulation of high-frequency trading activity.
 
-![AURA Trading Bot](https://github.com/user-attachments/assets/0d1e8429-b3ff-4bb4-a7c9-0d007368c4d8)
+![ORION Trading Bot](https://github.com/user-attachments/assets/0d1e8429-b3ff-4bb4-a7c9-0d007368c4d8)
 
 ## Overview
 
-AURA is a standalone trading bot module within a larger investment ecosystem. It features a high-performance trading engine that simulates institutional-grade trading with real-time execution logs, profit tracking, and intelligent alerts.
+ORION is a standalone trading bot module within a larger investment ecosystem. It features a high-performance trading engine that simulates institutional-grade trading with real-time execution logs, profit tracking, and intelligent alerts.
 
 ## Features
 
@@ -73,7 +73,7 @@ Three strategic engines with tier-based access control:
 ## Installation
 
 ```bash
-cd aura-trading-bot
+cd orion-trading-bot
 npm install
 ```
 
@@ -112,7 +112,7 @@ npm run lint
 ## Project Structure
 
 ```
-aura-trading-bot/
+orion-trading-bot/
 ├── src/
 │   ├── components/         # React components
 │   │   ├── Onboarding.tsx        # Onboarding flow
@@ -163,7 +163,7 @@ aura-trading-bot/
 
 ### Real-Time Crypto Data Integration
 
-AURA Trading Bot now supports **real-time cryptocurrency market data** sourced from Binance, alongside the existing simulated data mode.
+ORION Trading Bot now supports **real-time cryptocurrency market data** sourced from Binance, alongside the existing simulated data mode.
 
 #### Data Modes
 
