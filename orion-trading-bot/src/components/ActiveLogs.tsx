@@ -12,6 +12,7 @@ import {
   filterMessagesByConditions,
   selectWeightedRandom,
 } from '../data/messageTemplates';
+import { createTimingManager } from '../utils/timingManager';
 
 const TRADING_PAIRS = [
   'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'ADA/USDT',
@@ -29,6 +30,15 @@ const ActiveLogs: React.FC = () => {
   
   // Track volatility for market condition
   const [volatilityScore, setVolatilityScore] = useState(0.5);
+  
+  // Create timing manager instance that persists across renders
+  const timingManagerRef = useRef(createTimingManager(1000, {
+    variancePercent: 35, // Slightly higher than default 30% for more organic feel
+    burstProbability: 0.18, // 18% chance of bursts
+    burstMinCount: 2,
+    burstMaxCount: 6,
+    slowdownProbability: 0.12, // 12% chance of slowdowns
+  }));
 
   const scrollToBottom = () => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -53,7 +63,12 @@ const ActiveLogs: React.FC = () => {
     if (!userProfile.activeStrategy) return;
 
     const strategy = STRATEGIES[userProfile.activeStrategy];
-    const interval = strategy.speed === 'fast' ? 800 : strategy.speed === 'medium' ? 1500 : 3000;
+    const baseInterval = strategy.speed === 'fast' ? 800 : strategy.speed === 'medium' ? 1500 : 3000;
+    
+    // Update timing manager with new base interval
+    timingManagerRef.current.updateBaseInterval(baseInterval);
+    
+    let timeoutId: ReturnType<typeof setTimeout>;
 
     const generateLog = () => {
       const pair = TRADING_PAIRS[Math.floor(Math.random() * TRADING_PAIRS.length)];
@@ -100,17 +115,26 @@ const ActiveLogs: React.FC = () => {
         const updated = [...prev, newLog];
         return updated.slice(-50); // Keep only last 50 logs
       });
+      
+      // Schedule next log with randomized interval
+      const nextInterval = timingManagerRef.current.getNextInterval(volatilityScore);
+      timeoutId = setTimeout(generateLog, nextInterval);
     };
 
-    // Generate initial logs
+    // Generate initial logs with varied delays
     for (let i = 0; i < 5; i++) {
-      setTimeout(generateLog, i * 200);
+      setTimeout(generateLog, i * (200 + Math.random() * 100));
     }
 
-    // Continue generating logs
-    const timer = setInterval(generateLog, interval);
+    // Start the continuous log generation
+    const firstInterval = timingManagerRef.current.getNextInterval(volatilityScore);
+    timeoutId = setTimeout(generateLog, firstInterval);
 
-    return () => clearInterval(timer);
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [userProfile.activeStrategy, currentPrice, config.symbol, messageTracker, volatilityScore]);
 
   const getLogColor = (action: string) => {
