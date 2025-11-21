@@ -8,7 +8,7 @@ import { useMarketData } from '../contexts/MarketDataContext';
 const MILLISECONDS_TO_SECONDS = 1000;
 
 const TradingChart: React.FC = () => {
-  const { candles, currentPrice, connectionStatus, config, setDataMode } = useMarketData();
+  const { candles, currentPrice, connectionStatus, config, setDataMode, currentPair, chartRotationEnabled, setChartRotationEnabled } = useMarketData();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -123,6 +123,10 @@ const TradingChart: React.FC = () => {
     setDataMode(config.mode === 'real' ? 'simulated' : 'real');
   };
 
+  const toggleRotation = () => {
+    setChartRotationEnabled(!chartRotationEnabled);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -134,15 +138,24 @@ const TradingChart: React.FC = () => {
           <div>
             <h3 className="text-lg font-semibold">Live Market Feed</h3>
             <div className="text-sm text-gray-400 mt-1">
-              {config.symbol} · {config.timeframe}
+              {currentPair.displayName} · {config.timeframe}
               {currentPrice > 0 && (
                 <span className="ml-2 text-white font-mono">
-                  ${currentPrice.toFixed(2)}
+                  ${currentPrice.toFixed(currentPrice < 1 ? 4 : 2)}
                 </span>
               )}
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            {config.mode === 'simulated' && (
+              <button
+                onClick={toggleRotation}
+                className="text-xs px-3 py-1 rounded-full glass-card hover:bg-white/10 transition-colors"
+                title={chartRotationEnabled ? 'Disable chart rotation' : 'Enable chart rotation'}
+              >
+                {chartRotationEnabled ? '🔄 Auto-Rotate' : '⏸️ Paused'}
+              </button>
+            )}
             <button
               onClick={toggleMode}
               className="text-xs px-3 py-1 rounded-full glass-card hover:bg-white/10 transition-colors"

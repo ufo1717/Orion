@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import type { ReactNode } from 'react';
 import type { Candle, ConnectionStatus, DataMode, MarketDataConfig } from '../types';
 import { MarketDataManager, generateSimulatedCandle } from '../data/marketData';
+import { ChartRotationManager, TRADING_PAIRS, type TradingPair } from '../utils/chartRotation';
 
 interface MarketDataContextType {
   candles: Candle[];
@@ -10,6 +11,9 @@ interface MarketDataContextType {
   config: MarketDataConfig;
   updateConfig: (config: Partial<MarketDataConfig>) => void;
   setDataMode: (mode: DataMode) => void;
+  currentPair: TradingPair;
+  chartRotationEnabled: boolean;
+  setChartRotationEnabled: (enabled: boolean) => void;
 }
 
 const MarketDataContext = createContext<MarketDataContextType | undefined>(undefined);
@@ -33,9 +37,13 @@ export const MarketDataProvider: React.FC<{ children: ReactNode }> = ({ children
   const [candles, setCandles] = useState<Candle[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number>(0);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
+  const [chartRotationEnabled, setChartRotationEnabled] = useState<boolean>(true);
+  const [currentPair, setCurrentPair] = useState<TradingPair>(TRADING_PAIRS[0]);
   
   const managerRef = useRef<MarketDataManager | null>(null);
   const simulationIntervalRef = useRef<number | null>(null);
+  const rotationManagerRef = useRef<ChartRotationManager | null>(null);
+  const candleDataBySymbol = useRef<Map<string, Candle[]>>(new Map());
 
   // Handle incoming candles from WebSocket or simulation
   const handleNewCandle = (candle: Candle) => {
@@ -91,49 +99,104 @@ export const MarketDataProvider: React.FC<{ children: ReactNode }> = ({ children
     };
   }, [config.mode, config.symbol, config.timeframe]);
 
-  // Initialize simulated data mode
+  // Initialize simulated data mode with chart rotation
   useEffect(() => {
     if (config.mode !== 'simulated') return;
 
-    // Generate initial candles
     const intervalMs = config.timeframe === '1m' ? 60000 : 
                        config.timeframe === '5m' ? 300000 : 60000;
     
-    const initialCandles: Candle[] = [];
-    let lastCandle: Candle | undefined;
-    
-    // Generate historical candles with proper time spacing
-    for (let i = 0; i < 100; i++) {
-      const candle = generateSimulatedCandle(lastCandle, intervalMs);
-      initialCandles.push(candle);
-      lastCandle = candle;
-    }
-    
-    // Use callback to update state (deferred to avoid ESLint warning)
-    const initializeState = () => {
-      setCandles(initialCandles);
-      setCurrentPrice(initialCandles[initialCandles.length - 1].close);
-      setConnectionStatus('connected');
+    // Initialize data for all pairs
+    const initializePairData = (pair: TradingPair) => {
+      const initialCandles: Candle[] = [];
+      let lastCandle: Candle | undefined;
+      
+      // Generate historical candles with proper time spacing
+      for (let i = 0; i < 100; i++) {
+        const candle = generateSimulatedCandle(lastCandle, intervalMs, pair.basePrice);
+        initialCandles.push(candle);
+        lastCandle = candle;
+      }
+      
+      candleDataBySymbol.current.set(pair.symbol, initialCandles);
+      return lastCandle;
     };
-    
-    // Defer state updates to next tick
-    const timeoutId = setTimeout(initializeState, 0);
 
-    // Continue generating candles
+    // Initialize all pairs
+    const lastCandles = new Map<string, Candle>();
+    TRADING_PAIRS.forEach(pair => {
+      const lastCandle = initializePairData(pair);
+      if (lastCandle) {
+        lastCandles.set(pair.symbol, lastCandle);
+      }
+    });
+
+    // Set initial state for the first pair
+    const initialPairData = candleDataBySymbol.current.get(currentPair.symbol);
+    if (initialPairData) {
+      setCandles(initialPairData);
+      setCurrentPrice(initialPairData[initialPairData.length - 1].close);
+      setConnectionStatus('connected');
+    }
+
+    // Continue generating candles for all pairs
     simulationIntervalRef.current = setInterval(() => {
-      const newCandle = generateSimulatedCandle(lastCandle, intervalMs);
-      lastCandle = newCandle;
-      handleNewCandle(newCandle);
+      TRADING_PAIRS.forEach(pair => {
+        const lastCandle = lastCandles.get(pair.symbol);
+        const newCandle = generateSimulatedCandle(lastCandle, intervalMs, pair.basePrice);
+        lastCandles.set(pair.symbol, newCandle);
+        
+        // Update the stored data for this pair
+        const existingData = candleDataBySymbol.current.get(pair.symbol) || [];
+        const updatedData = [...existingData, newCandle].slice(-200); // Keep last 200
+        candleDataBySymbol.current.set(pair.symbol, updatedData);
+        
+        // If this is the currently displayed pair, update the UI
+        if (pair.symbol === currentPair.symbol) {
+          setCandles(updatedData);
+          setCurrentPrice(newCandle.close);
+        }
+      });
     }, intervalMs);
 
     return () => {
-      clearTimeout(timeoutId);
       if (simulationIntervalRef.current) {
         clearInterval(simulationIntervalRef.current);
         simulationIntervalRef.current = null;
       }
     };
-  }, [config.mode, config.timeframe]);
+  }, [config.mode, config.timeframe, currentPair.symbol]);
+
+  // Initialize chart rotation
+  useEffect(() => {
+    if (config.mode !== 'simulated' || !chartRotationEnabled) {
+      // Stop rotation if it's running
+      if (rotationManagerRef.current) {
+        rotationManagerRef.current.stop();
+      }
+      return;
+    }
+
+    // Create rotation manager
+    const rotationManager = new ChartRotationManager((pair: TradingPair) => {
+      setCurrentPair(pair);
+      
+      // Load the candles for this pair
+      const pairData = candleDataBySymbol.current.get(pair.symbol);
+      if (pairData && pairData.length > 0) {
+        setCandles(pairData);
+        setCurrentPrice(pairData[pairData.length - 1].close);
+      }
+    });
+
+    rotationManagerRef.current = rotationManager;
+    rotationManager.start();
+
+    return () => {
+      rotationManager.stop();
+      rotationManagerRef.current = null;
+    };
+  }, [config.mode, chartRotationEnabled]);
 
   const updateConfig = (newConfig: Partial<MarketDataConfig>) => {
     setConfig((prev) => ({ ...prev, ...newConfig }));
@@ -152,6 +215,9 @@ export const MarketDataProvider: React.FC<{ children: ReactNode }> = ({ children
         config,
         updateConfig,
         setDataMode,
+        currentPair,
+        chartRotationEnabled,
+        setChartRotationEnabled,
       }}
     >
       {children}

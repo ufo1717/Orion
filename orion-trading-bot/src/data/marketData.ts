@@ -197,9 +197,9 @@ export class MarketDataManager {
 }
 
 // Generate simulated candles for fallback mode
-export function generateSimulatedCandle(previousCandle?: Candle, interval: number = 60000): Candle {
+export function generateSimulatedCandle(previousCandle?: Candle, interval: number = 60000, defaultBasePrice: number = 45000): Candle {
   const now = Date.now();
-  const basePrice = previousCandle?.close ?? 45000; // Default to ~45k for BTC
+  const basePrice = previousCandle?.close ?? defaultBasePrice;
   
   // Calculate the proper time for the new candle
   const openTime = previousCandle ? previousCandle.closeTime : now - interval;
