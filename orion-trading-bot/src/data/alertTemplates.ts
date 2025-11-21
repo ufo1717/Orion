@@ -21,7 +21,7 @@ export interface AlertTemplate {
   contextTrigger?: 'trade_execution' | 'price_movement' | 'portfolio_change' | 'time_based' | 'risk_event';
 }
 
-// Comprehensive alert messages (50+ templates organized by category)
+// Comprehensive alert messages (66 templates organized by category)
 export const ALERT_TEMPLATES: AlertTemplate[] = [
   // Market Volatility Alerts (8 alerts)
   { 
@@ -472,8 +472,7 @@ export class AlertMessageTracker {
   }
   
   private cleanupOldEntries(now: number): void {
-    const entries = Array.from(this.recentAlerts.entries());
-    for (const [message, timestamp] of entries) {
+    for (const [message, timestamp] of this.recentAlerts) {
       if (now - timestamp > this.timeWindowMs) {
         this.recentAlerts.delete(message);
       }
