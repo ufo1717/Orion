@@ -621,23 +621,29 @@ export const getTimeOfDay = (): TimeOfDay => {
   return 'night';
 };
 
+// Thresholds for market condition determination
+const VOLATILITY_HIGH_THRESHOLD = 0.7;
+const VOLATILITY_LOW_THRESHOLD = 0.3;
+const TRENDING_PROBABILITY = 0.5;
+const TRENDING_UP_PROBABILITY = 0.75;
+
 // Helper function to determine market condition based on recent price action
 export const getMarketCondition = (volatilityScore: number = 0.5): MarketCondition => {
   const random = Math.random();
   
   // High volatility scenarios
-  if (volatilityScore > 0.7) {
+  if (volatilityScore > VOLATILITY_HIGH_THRESHOLD) {
     return 'volatile';
   }
   
   // Calm market
-  if (volatilityScore < 0.3) {
+  if (volatilityScore < VOLATILITY_LOW_THRESHOLD) {
     return 'calm';
   }
   
-  // Trending markets
-  if (random > 0.5) {
-    return random > 0.75 ? 'trending_up' : 'trending_down';
+  // Trending markets - 50% chance, then 75% chance of up vs down
+  if (random > TRENDING_PROBABILITY) {
+    return random > TRENDING_UP_PROBABILITY ? 'trending_up' : 'trending_down';
   }
   
   // Default to volatile for interesting messages
