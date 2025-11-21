@@ -5,28 +5,31 @@ import {
   ALERT_TEMPLATES,
   AlertMessageTracker,
   selectWeightedRandomAlert,
+  getRandomAlertInterval,
 } from '../data/alertTemplates';
 
 const AlertsPanel: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   
-  // Create alert message tracker instance that persists across renders
-  const alertTracker = useMemo(() => new AlertMessageTracker(10), []);
+  // Create alert message tracker instance that persists across renders (60-minute window)
+  const alertTracker = useMemo(() => new AlertMessageTracker(60), []);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
     const generateAlert = () => {
       // Try to find a non-repeated alert
       let selectedAlert = selectWeightedRandomAlert(ALERT_TEMPLATES);
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 20; // Increased attempts since we have more alerts
       
-      // Try to avoid recently used alerts
+      // Try to avoid recently used alerts (within 60 minutes)
       while (alertTracker.isRecentlyUsed(selectedAlert.message) && attempts < maxAttempts) {
         selectedAlert = selectWeightedRandomAlert(ALERT_TEMPLATES);
         attempts++;
       }
       
-      // Track the alert
+      // Track the alert with timestamp
       alertTracker.addAlert(selectedAlert.message);
       
       const newAlert: Alert = {
@@ -40,15 +43,20 @@ const AlertsPanel: React.FC = () => {
         const updated = [newAlert, ...prev];
         return updated.slice(0, 5); // Keep only last 5 alerts
       });
+      
+      // Schedule next alert with random interval (6-12 seconds)
+      const nextInterval = getRandomAlertInterval();
+      timeoutId = setTimeout(generateAlert, nextInterval);
     };
 
-    // Generate initial alert
+    // Generate initial alert immediately
     generateAlert();
 
-    // Generate new alerts periodically
-    const interval = setInterval(generateAlert, 8000);
-
-    return () => clearInterval(interval);
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [alertTracker]);
 
   const getAlertStyle = (type: Alert['type']) => {
