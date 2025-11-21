@@ -26,7 +26,7 @@ const Dashboard: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-              AURA TRADING BOT
+              ORION TRADING BOT
             </h1>
             <p className="text-gray-400 mt-1">
               High-Performance Trading Engine

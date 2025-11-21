@@ -1,6 +1,6 @@
-# AURA Trading Bot - Complete Application Walkthrough
+# ORION Trading Bot - Complete Application Walkthrough
 
-This document provides a comprehensive walkthrough of the AURA Trading Bot application, demonstrating all features and operational flow through real screenshots captured during runtime testing.
+This document provides a comprehensive walkthrough of the ORION Trading Bot application, demonstrating all features and operational flow through real screenshots captured during runtime testing.
 
 ## Table of Contents
 1. [Application Overview](#application-overview)
@@ -14,7 +14,7 @@ This document provides a comprehensive walkthrough of the AURA Trading Bot appli
 
 ## Application Overview
 
-The AURA Trading Bot is an enterprise-grade, glassmorphism dark mode trading bot interface with hyper-realistic simulation of high-frequency trading activity. The application features:
+The ORION Trading Bot is an enterprise-grade, glassmorphism dark mode trading bot interface with hyper-realistic simulation of high-frequency trading activity. The application features:
 
 - **Three-tier access system** (Tier 1, 2, and 3)
 - **Three trading strategies** (FOUNDATIONAL, ADVANCED, PRIME)
@@ -31,7 +31,7 @@ The AURA Trading Bot is an enterprise-grade, glassmorphism dark mode trading bot
 When users first launch the application, they experience a seamless onboarding sequence:
 
 ![Onboarding Start](screenshots/07-onboarding-start.png)
-*Screenshot 1: Initial loading screen with AURA branding*
+*Screenshot 1: Initial loading screen with ORION branding*
 
 The onboarding sequence includes:
 1. **System Check**: Animated "Synchronizing with Global Exchanges..." message
@@ -289,7 +289,7 @@ VITE_USE_REAL_DATA=false  # For simulated data (default)
 ### Installation
 
 ```bash
-cd aura-trading-bot
+cd orion-trading-bot
 npm install
 ```
 
@@ -329,7 +329,7 @@ npm run lint
 
 ## Conclusion
 
-This walkthrough demonstrates the complete operational flow of the AURA Trading Bot application:
+This walkthrough demonstrates the complete operational flow of the ORION Trading Bot application:
 
 1. ✅ **Onboarding Flow**: Seamless tier verification and system initialization
 2. ✅ **Strategy Selection**: Tier-based access control with three distinct strategies

@@ -124,7 +124,7 @@ const ActiveLogs: React.FC = () => {
               <span className="text-gray-500">
                 [{log.timestamp.toLocaleTimeString()}]
               </span>{' '}
-              <span className="text-purple-400">[AURA-BOT]:</span>{' '}
+              <span className="text-purple-400">[ORION-BOT]:</span>{' '}
               {log.message}
               {log.profit && (
                 <span className="text-green-500 ml-2">

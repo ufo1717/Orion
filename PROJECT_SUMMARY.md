@@ -1,13 +1,13 @@
-# AURA Trading Bot - Implementation Summary
+# ORION Trading Bot - Implementation Summary
 
 ## Project Overview
 
-This repository contains the AURA Trading Bot Module, an enterprise-grade, glassmorphism dark mode trading bot interface with hyper-realistic simulation of high-frequency trading activity.
+This repository contains the ORION Trading Bot Module, an enterprise-grade, glassmorphism dark mode trading bot interface with hyper-realistic simulation of high-frequency trading activity.
 
 ## What Was Implemented
 
 ### Complete Trading Bot Application
-A fully functional React-based trading simulation application located in the `aura-trading-bot/` directory.
+A fully functional React-based trading simulation application located in the `orion-trading-bot/` directory.
 
 ### Key Features
 
@@ -50,7 +50,7 @@ Three distinct trading strategies with tier-based access:
 ## Getting Started
 
 ```bash
-cd aura-trading-bot
+cd orion-trading-bot
 npm install
 npm run dev
 ```
@@ -81,7 +81,7 @@ See PR description for detailed screenshots of:
 
 ## Documentation
 
-Comprehensive documentation available in `aura-trading-bot/README.md`
+Comprehensive documentation available in `orion-trading-bot/README.md`
 
 ## License
 

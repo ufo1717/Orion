@@ -1,4 +1,4 @@
-// Core type definitions for AURA Trading Bot
+// Core type definitions for ORION Trading Bot
 
 export const UserTier = {
   TIER_1: 1,
