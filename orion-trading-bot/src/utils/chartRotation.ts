@@ -6,54 +6,53 @@
 export interface TradingPair {
   symbol: string; // e.g., 'BTCUSDT'
   displayName: string; // e.g., 'BTC/USDT'
-  basePrice: number; // Base price for simulation
 }
 
-// 30+ major, mid-cap, and trending crypto trading pairs
-// basePrice field removed as all data is now sourced from live APIs
+// 35 major, mid-cap, and trending crypto trading pairs
+// All data is sourced from live Binance API
 export const TRADING_PAIRS: TradingPair[] = [
   // Top 10 by market cap
-  { symbol: 'BTCUSDT', displayName: 'BTC/USDT', basePrice: 0 },
-  { symbol: 'ETHUSDT', displayName: 'ETH/USDT', basePrice: 0 },
-  { symbol: 'BNBUSDT', displayName: 'BNB/USDT', basePrice: 0 },
-  { symbol: 'SOLUSDT', displayName: 'SOL/USDT', basePrice: 0 },
-  { symbol: 'XRPUSDT', displayName: 'XRP/USDT', basePrice: 0 },
-  { symbol: 'ADAUSDT', displayName: 'ADA/USDT', basePrice: 0 },
-  { symbol: 'AVAXUSDT', displayName: 'AVAX/USDT', basePrice: 0 },
-  { symbol: 'DOTUSDT', displayName: 'DOT/USDT', basePrice: 0 },
-  { symbol: 'MATICUSDT', displayName: 'MATIC/USDT', basePrice: 0 },
-  { symbol: 'LINKUSDT', displayName: 'LINK/USDT', basePrice: 0 },
+  { symbol: 'BTCUSDT', displayName: 'BTC/USDT' },
+  { symbol: 'ETHUSDT', displayName: 'ETH/USDT' },
+  { symbol: 'BNBUSDT', displayName: 'BNB/USDT' },
+  { symbol: 'SOLUSDT', displayName: 'SOL/USDT' },
+  { symbol: 'XRPUSDT', displayName: 'XRP/USDT' },
+  { symbol: 'ADAUSDT', displayName: 'ADA/USDT' },
+  { symbol: 'AVAXUSDT', displayName: 'AVAX/USDT' },
+  { symbol: 'DOTUSDT', displayName: 'DOT/USDT' },
+  { symbol: 'MATICUSDT', displayName: 'MATIC/USDT' },
+  { symbol: 'LINKUSDT', displayName: 'LINK/USDT' },
   
   // Major DeFi and Layer 1s
-  { symbol: 'UNIUSDT', displayName: 'UNI/USDT', basePrice: 0 },
-  { symbol: 'LTCUSDT', displayName: 'LTC/USDT', basePrice: 0 },
-  { symbol: 'ATOMUSDT', displayName: 'ATOM/USDT', basePrice: 0 },
-  { symbol: 'ETCUSDT', displayName: 'ETC/USDT', basePrice: 0 },
-  { symbol: 'XLMUSDT', displayName: 'XLM/USDT', basePrice: 0 },
-  { symbol: 'NEARUSDT', displayName: 'NEAR/USDT', basePrice: 0 },
-  { symbol: 'ALGOUSDT', displayName: 'ALGO/USDT', basePrice: 0 },
-  { symbol: 'VETUSDT', displayName: 'VET/USDT', basePrice: 0 },
-  { symbol: 'ICPUSDT', displayName: 'ICP/USDT', basePrice: 0 },
-  { symbol: 'FILUSDT', displayName: 'FIL/USDT', basePrice: 0 },
+  { symbol: 'UNIUSDT', displayName: 'UNI/USDT' },
+  { symbol: 'LTCUSDT', displayName: 'LTC/USDT' },
+  { symbol: 'ATOMUSDT', displayName: 'ATOM/USDT' },
+  { symbol: 'ETCUSDT', displayName: 'ETC/USDT' },
+  { symbol: 'XLMUSDT', displayName: 'XLM/USDT' },
+  { symbol: 'NEARUSDT', displayName: 'NEAR/USDT' },
+  { symbol: 'ALGOUSDT', displayName: 'ALGO/USDT' },
+  { symbol: 'VETUSDT', displayName: 'VET/USDT' },
+  { symbol: 'ICPUSDT', displayName: 'ICP/USDT' },
+  { symbol: 'FILUSDT', displayName: 'FIL/USDT' },
   
   // Trending and mid-caps
-  { symbol: 'APTUSDT', displayName: 'APT/USDT', basePrice: 0 },
-  { symbol: 'ARBUSDT', displayName: 'ARB/USDT', basePrice: 0 },
-  { symbol: 'OPUSDT', displayName: 'OP/USDT', basePrice: 0 },
-  { symbol: 'INJUSDT', displayName: 'INJ/USDT', basePrice: 0 },
-  { symbol: 'SUIUSDT', displayName: 'SUI/USDT', basePrice: 0 },
-  { symbol: 'LDOUSDT', displayName: 'LDO/USDT', basePrice: 0 },
-  { symbol: 'AAVEUSDT', displayName: 'AAVE/USDT', basePrice: 0 },
-  { symbol: 'MKRUSDT', displayName: 'MKR/USDT', basePrice: 0 },
-  { symbol: 'GRTUSDT', displayName: 'GRT/USDT', basePrice: 0 },
-  { symbol: 'SUSHIUSDT', displayName: 'SUSHI/USDT', basePrice: 0 },
+  { symbol: 'APTUSDT', displayName: 'APT/USDT' },
+  { symbol: 'ARBUSDT', displayName: 'ARB/USDT' },
+  { symbol: 'OPUSDT', displayName: 'OP/USDT' },
+  { symbol: 'INJUSDT', displayName: 'INJ/USDT' },
+  { symbol: 'SUIUSDT', displayName: 'SUI/USDT' },
+  { symbol: 'LDOUSDT', displayName: 'LDO/USDT' },
+  { symbol: 'AAVEUSDT', displayName: 'AAVE/USDT' },
+  { symbol: 'MKRUSDT', displayName: 'MKR/USDT' },
+  { symbol: 'GRTUSDT', displayName: 'GRT/USDT' },
+  { symbol: 'SUSHIUSDT', displayName: 'SUSHI/USDT' },
   
   // Additional liquid pairs
-  { symbol: 'FTMUSDT', displayName: 'FTM/USDT', basePrice: 0 },
-  { symbol: 'SANDUSDT', displayName: 'SAND/USDT', basePrice: 0 },
-  { symbol: 'MANAUSDT', displayName: 'MANA/USDT', basePrice: 0 },
-  { symbol: 'AXSUSDT', displayName: 'AXS/USDT', basePrice: 0 },
-  { symbol: 'THETAUSDT', displayName: 'THETA/USDT', basePrice: 0 },
+  { symbol: 'FTMUSDT', displayName: 'FTM/USDT' },
+  { symbol: 'SANDUSDT', displayName: 'SAND/USDT' },
+  { symbol: 'MANAUSDT', displayName: 'MANA/USDT' },
+  { symbol: 'AXSUSDT', displayName: 'AXS/USDT' },
+  { symbol: 'THETAUSDT', displayName: 'THETA/USDT' },
 ];
 
 export class ChartRotationManager {
