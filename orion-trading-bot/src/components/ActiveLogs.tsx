@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../contexts/AppContext';
 import { useMarketData } from '../contexts/MarketDataContext';
+import { useMarketRegime } from '../contexts/MarketRegimeContext';
 import { STRATEGIES } from '../utils/strategies';
 import type { TradeLog } from '../types';
 import {
@@ -11,10 +12,8 @@ import {
   getMarketCondition,
   filterMessagesByConditions,
   selectWeightedRandom,
-  type MarketRegime,
 } from '../data/messageTemplates';
 import { createTimingManager } from '../utils/timingManager';
-import { createMarketRegimeManager, type MarketRegimeConfig } from '../utils/marketRegimeManager';
 
 const TRADING_PAIRS = [
   'BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'ADA/USDT',
@@ -24,23 +23,12 @@ const TRADING_PAIRS = [
 const ActiveLogs: React.FC = () => {
   const { userProfile } = useApp();
   const { currentPrice, config } = useMarketData();
+  const { currentRegime, regimeConfig, volatilityScore } = useMarketRegime();
   const [logs, setLogs] = useState<TradeLog[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
   
   // Create message tracker instance that persists across renders
   const messageTracker = useMemo(() => new MessageTracker(20), []);
-  
-  // Create market regime manager instance
-  const regimeManager = useMemo(() => createMarketRegimeManager('sideways'), []);
-  
-  // Track current market regime and config
-  const [currentRegime, setCurrentRegime] = useState<MarketRegime>('sideways');
-  const [regimeConfig, setRegimeConfig] = useState<MarketRegimeConfig>(
-    regimeManager.getCurrentConfig()
-  );
-  
-  // Track volatility for market condition (now influenced by regime)
-  const [volatilityScore, setVolatilityScore] = useState(0.5);
   
   // Create timing manager instance that persists across renders
   const timingManagerRef = useRef(createTimingManager(1000, {
@@ -58,36 +46,6 @@ const ActiveLogs: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [logs]);
-  
-  // Start market regime manager
-  useEffect(() => {
-    regimeManager.start((regime, config) => {
-      setCurrentRegime(regime);
-      setRegimeConfig(config);
-      setVolatilityScore(config.volatilityScore);
-      console.log(`Market regime changed to: ${regime}`, config);
-    });
-    
-    return () => {
-      regimeManager.stop();
-    };
-  }, [regimeManager]);
-  
-  // Update volatility score periodically (within regime bounds)
-  useEffect(() => {
-    const updateVolatility = () => {
-      // Vary volatility around the regime's base volatility (±0.15)
-      const baseVolatility = regimeConfig.volatilityScore;
-      const variance = 0.15;
-      const newVolatility = Math.max(0, Math.min(1, 
-        baseVolatility + (Math.random() - 0.5) * variance * 2
-      ));
-      setVolatilityScore(newVolatility);
-    };
-    
-    const volatilityTimer = setInterval(updateVolatility, 30000); // Update every 30 seconds
-    return () => clearInterval(volatilityTimer);
-  }, [regimeConfig]);
 
   useEffect(() => {
     if (!userProfile.activeStrategy) return;

@@ -20,6 +20,10 @@ export interface MarketRegimeConfig {
   };
 }
 
+// Regime transition configuration
+const MIN_TRANSITION_MINUTES = 30;
+const MAX_TRANSITION_MINUTES = 60;
+
 // Market regime configurations
 const REGIME_CONFIGS: Record<MarketRegime, MarketRegimeConfig> = {
   bull: {
@@ -89,9 +93,8 @@ export class MarketRegimeManager {
    * Calculate next transition time (30-60 minutes from now)
    */
   private calculateNextTransitionTime(): number {
-    const minMinutes = 30;
-    const maxMinutes = 60;
-    const randomMinutes = minMinutes + Math.random() * (maxMinutes - minMinutes);
+    const randomMinutes = MIN_TRANSITION_MINUTES + 
+      Math.random() * (MAX_TRANSITION_MINUTES - MIN_TRANSITION_MINUTES);
     return Date.now() + randomMinutes * 60 * 1000;
   }
 
