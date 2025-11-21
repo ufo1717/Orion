@@ -1,18 +1,46 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Alert } from '../types';
 import {
   ALERT_TEMPLATES,
   AlertMessageTracker,
   selectWeightedRandomAlert,
-  getRandomAlertInterval,
 } from '../data/alertTemplates';
+import { createTimingManager } from '../utils/timingManager';
 
 const AlertsPanel: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   
   // Create alert message tracker instance that persists across renders (60-minute window)
   const alertTracker = useMemo(() => new AlertMessageTracker(60), []);
+  
+  // Track volatility for dynamic timing (simulated for alerts) - use ref to avoid effect restart
+  const volatilityScoreRef = useRef(0.5);
+  
+  // Create timing manager for alerts with different configuration
+  const timingManagerRef = useRef(createTimingManager(8000, { // 8 second base
+    variancePercent: 40, // Higher variance for alerts
+    burstProbability: 0.12, // Less frequent bursts than logs
+    burstMinCount: 2,
+    burstMaxCount: 3, // Smaller bursts
+    burstIntervalMin: 1000, // 1 second min
+    burstIntervalMax: 2000, // 2 second max
+    slowdownProbability: 0.15, // More frequent slowdowns
+    slowdownMultiplier: 3.0, // Longer slowdowns
+  }));
+
+  // Update volatility periodically for dynamic timing
+  useEffect(() => {
+    const updateVolatility = () => {
+      // Simulate volatility changes - in real scenario based on actual price data
+      volatilityScoreRef.current = Math.random();
+    };
+    
+    const volatilityTimer = setInterval(updateVolatility, 30000); // Update every 30 seconds
+    updateVolatility(); // Initial update
+    
+    return () => clearInterval(volatilityTimer);
+  }, []);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -44,13 +72,14 @@ const AlertsPanel: React.FC = () => {
         return updated.slice(0, 5); // Keep only last 5 alerts
       });
       
-      // Schedule next alert with random interval (6-12 seconds)
-      const nextInterval = getRandomAlertInterval();
+      // Schedule next alert with randomized interval
+      const nextInterval = timingManagerRef.current.getNextInterval(volatilityScoreRef.current);
       timeoutId = setTimeout(generateAlert, nextInterval);
     };
 
-    // Generate initial alert immediately
-    generateAlert();
+    // Generate initial alert with a small delay
+    const initialDelay = 2000 + Math.random() * 1000;
+    timeoutId = setTimeout(generateAlert, initialDelay);
 
     return () => {
       if (timeoutId) {
