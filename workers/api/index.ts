@@ -18,6 +18,37 @@ interface TradeLog {
   price: number;
 }
 
+interface JWTPayload {
+  userId: number;
+  email: string;
+  tier: number;
+  iat?: number;
+  exp?: number;
+}
+
+interface CorsHeaders {
+  'Access-Control-Allow-Origin': string;
+  'Access-Control-Allow-Methods': string;
+  'Access-Control-Allow-Headers': string;
+  'Content-Type'?: string;
+}
+
+interface RegisterRequest {
+  email: string;
+  password: string;
+  tier?: number;
+}
+
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+interface ActivateStrategyRequest {
+  strategyId: number;
+  strategyName: string;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -137,10 +168,10 @@ async function verifyToken(token: string, secret: string) {
 }
 
 // Generate JWT
-async function generateToken(payload: any, secret: string): Promise<string> {
+async function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>, secret: string): Promise<string> {
   const header = { alg: 'HS256', typ: 'JWT' };
   const now = Math.floor(Date.now() / 1000);
-  const claims = { ...payload, iat: now, exp: now + 3600 }; // 1 hour expiry
+  const claims: JWTPayload = { ...payload, iat: now, exp: now + 3600 }; // 1 hour expiry
   
   const encoder = new TextEncoder();
   const headerB64 = base64UrlEncode(JSON.stringify(header));
@@ -181,13 +212,18 @@ function base64UrlDecode(str: string): string {
   return atob(str);
 }
 
-// Password hashing with PBKDF2 (secure alternative to plain SHA-256)
-async function hashPassword(password: string): Promise<string> {
+// Generate random salt for password hashing
+function generateSalt(): string {
+  const array = new Uint8Array(16); // 16 bytes = 128 bits
+  crypto.getRandomValues(array);
+  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Password hashing with PBKDF2 and per-user salt
+async function hashPassword(password: string, salt: string): Promise<string> {
   const encoder = new TextEncoder();
   const passwordData = encoder.encode(password);
-  
-  // Generate a salt (in production, store this per-user; for now using a deterministic approach)
-  const salt = await crypto.subtle.digest('SHA-256', encoder.encode('orion-salt-v1'));
+  const saltData = Uint8Array.from(salt.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)));
   
   // Import password as key material
   const keyMaterial = await crypto.subtle.importKey(
@@ -202,7 +238,7 @@ async function hashPassword(password: string): Promise<string> {
   const derivedBits = await crypto.subtle.deriveBits(
     {
       name: 'PBKDF2',
-      salt: salt,
+      salt: saltData,
       iterations: 100000,
       hash: 'SHA-256'
     },
@@ -215,9 +251,9 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 // User Registration
-async function handleRegister(request: Request, env: Env, headers: any) {
+async function handleRegister(request: Request, env: Env, headers: CorsHeaders) {
   try {
-    const body = await request.json() as any;
+    const body = await request.json() as RegisterRequest;
     const { email, password, tier = 1 } = body;
     
     if (!email || !password) {
@@ -227,13 +263,16 @@ async function handleRegister(request: Request, env: Env, headers: any) {
       });
     }
     
-    // Hash password using Web Crypto API
-    const passwordHash = await hashPassword(password);
+    // Generate unique salt for this user
+    const salt = generateSalt();
+    
+    // Hash password with the salt
+    const passwordHash = await hashPassword(password, salt);
     
     // Insert into D1 database
     const result = await env.DB.prepare(
-      'INSERT INTO users (email, password_hash, tier, balance, created_at) VALUES (?, ?, ?, ?, ?)'
-    ).bind(email, passwordHash, tier, 10000, new Date().toISOString()).run();
+      'INSERT INTO users (email, password_hash, password_salt, tier, balance, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(email, passwordHash, salt, tier, 10000, new Date().toISOString()).run();
     
     if (!result.success) {
       return new Response(JSON.stringify({ error: 'Registration failed - email may already exist' }), { 
@@ -269,9 +308,9 @@ async function handleRegister(request: Request, env: Env, headers: any) {
 }
 
 // User Login
-async function handleLogin(request: Request, env: Env, headers: any) {
+async function handleLogin(request: Request, env: Env, headers: CorsHeaders) {
   try {
-    const body = await request.json() as any;
+    const body = await request.json() as LoginRequest;
     const { email, password } = body;
     
     if (!email || !password) {
@@ -281,14 +320,12 @@ async function handleLogin(request: Request, env: Env, headers: any) {
       });
     }
     
-    const passwordHash = await hashPassword(password);
-    
-    // Query user from database
+    // Query user from database (including salt)
     const { results } = await env.DB.prepare(
-      'SELECT id, email, password_hash, tier, balance FROM users WHERE email = ?'
+      'SELECT id, email, password_hash, password_salt, tier, balance FROM users WHERE email = ?'
     ).bind(email).all();
     
-    if (results.length === 0 || results[0].password_hash !== passwordHash) {
+    if (results.length === 0) {
       return new Response(JSON.stringify({ error: 'Invalid credentials' }), { 
         status: 401, 
         headers: { ...headers, 'Content-Type': 'application/json' } 
@@ -296,6 +333,17 @@ async function handleLogin(request: Request, env: Env, headers: any) {
     }
     
     const user = results[0] as any;
+    
+    // Hash the provided password with the user's salt
+    const passwordHash = await hashPassword(password, user.password_salt);
+    
+    // Compare hashes
+    if (user.password_hash !== passwordHash) {
+      return new Response(JSON.stringify({ error: 'Invalid credentials' }), { 
+        status: 401, 
+        headers: { ...headers, 'Content-Type': 'application/json' } 
+      });
+    }
     
     // Update last login
     await env.DB.prepare(
@@ -331,7 +379,7 @@ async function handleLogin(request: Request, env: Env, headers: any) {
 }
 
 // User Logout
-async function handleLogout(request: Request, env: Env, headers: any) {
+async function handleLogout(request: Request, env: Env, headers: CorsHeaders) {
   try {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     if (token) {
@@ -351,7 +399,7 @@ async function handleLogout(request: Request, env: Env, headers: any) {
 }
 
 // Get User Profile
-async function handleGetProfile(user: any, env: Env, headers: any) {
+async function handleGetProfile(user: JWTPayload, env: Env, headers: CorsHeaders) {
   try {
     const { results } = await env.DB.prepare(
       'SELECT u.*, p.active_strategy, p.onboarding_complete, p.preferences FROM users u LEFT JOIN user_profiles p ON u.id = p.user_id WHERE u.id = ?'
@@ -378,7 +426,7 @@ async function handleGetProfile(user: any, env: Env, headers: any) {
 }
 
 // Get Strategies
-async function handleGetStrategies(user: any, env: Env, headers: any) {
+async function handleGetStrategies(user: JWTPayload, env: Env, headers: CorsHeaders) {
   const strategies = [
     {
       id: 1,
@@ -414,9 +462,9 @@ async function handleGetStrategies(user: any, env: Env, headers: any) {
 }
 
 // Activate Strategy
-async function handleActivateStrategy(request: Request, user: any, env: Env, headers: any) {
+async function handleActivateStrategy(request: Request, user: JWTPayload, env: Env, headers: CorsHeaders) {
   try {
-    const body = await request.json() as any;
+    const body = await request.json() as ActivateStrategyRequest;
     const { strategyId, strategyName } = body;
     
     await env.DB.prepare(
@@ -439,7 +487,7 @@ async function handleActivateStrategy(request: Request, user: any, env: Env, hea
 }
 
 // Get Trade Logs
-async function handleGetTrades(user: any, env: Env, headers: any) {
+async function handleGetTrades(user: JWTPayload, env: Env, headers: CorsHeaders) {
   try {
     const { results } = await env.DB.prepare(
       'SELECT * FROM trade_logs WHERE user_id = ? ORDER BY timestamp DESC LIMIT 100'
@@ -458,7 +506,7 @@ async function handleGetTrades(user: any, env: Env, headers: any) {
 }
 
 // Get Analytics
-async function handleGetAnalytics(user: any, env: Env, headers: any) {
+async function handleGetAnalytics(user: JWTPayload, env: Env, headers: CorsHeaders) {
   try {
     const { results } = await env.DB.prepare(
       'SELECT * FROM analytics WHERE user_id = ? ORDER BY calculated_at DESC LIMIT 10'
