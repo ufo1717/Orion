@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.9.0",
+    "crypto-js": "^4.2.0",
     "framer-motion": "^12.23.24",
     "lightweight-charts": "^5.0.9",
     "react": "^19.2.0",
