@@ -107,6 +107,7 @@ export const validateApiKey = (apiKey: string): boolean => {
   const hasContent = /[a-zA-Z0-9]/.test(apiKey);
   
   // Should not contain obviously invalid characters like control characters
+  // eslint-disable-next-line no-control-regex
   const hasInvalidChars = /[\x00-\x1F\x7F]/.test(apiKey);
   
   return hasContent && !hasInvalidChars;

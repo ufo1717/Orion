@@ -10,7 +10,7 @@ const ApiKeyManager: React.FC = () => {
   // Memoize the stored key check to avoid repeated decryption on every render
   const hasStoredKey = useMemo(() => {
     return !!(user?.sub && retrieveApiKey(user.sub));
-  }, [user?.sub]);
+  }, [user]); // Use user instead of user?.sub as dependency
   
   // Initialize with stored key if available
   const getInitialKey = () => {
