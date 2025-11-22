@@ -1,11 +1,16 @@
 // API Key Management component
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useAuthContext } from '../contexts/AuthContext';
 import { storeApiKey, retrieveApiKey, removeApiKey, validateApiKey } from '../utils/encryption';
 
 const ApiKeyManager: React.FC = () => {
   const { user } = useAuthContext();
+  
+  // Memoize the stored key check to avoid repeated decryption on every render
+  const hasStoredKey = useMemo(() => {
+    return !!(user?.sub && retrieveApiKey(user.sub));
+  }, [user?.sub]);
   
   // Initialize with stored key if available
   const getInitialKey = () => {
@@ -15,8 +20,6 @@ const ApiKeyManager: React.FC = () => {
   const [apiKey, setApiKey] = useState(getInitialKey);
   const [showApiKey, setShowApiKey] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const hasStoredKey = !!(user?.sub && retrieveApiKey(user.sub));
 
   const handleSave = () => {
     if (!user?.sub) {

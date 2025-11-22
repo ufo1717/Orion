@@ -7,7 +7,6 @@ import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { ContextSync } from './components/ContextSync';
 import './App.css';
 
 function AppContent() {
@@ -22,18 +21,12 @@ function AppContent() {
 
   // Show onboarding after authentication
   if (isLoading && showOnboarding) {
-    return (
-      <>
-        <ContextSync />
-        <Onboarding onComplete={() => setShowOnboarding(false)} />
-      </>
-    );
+    return <Onboarding onComplete={() => setShowOnboarding(false)} />;
   }
 
   // Show protected dashboard
   return (
     <ProtectedRoute>
-      <ContextSync />
       <Dashboard />
     </ProtectedRoute>
   );

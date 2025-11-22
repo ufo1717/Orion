@@ -1,12 +1,17 @@
 // API Key encryption and secure storage utilities
 import CryptoJS from 'crypto-js';
 
-// Get encryption key from environment or use a default (in production, always use env)
+// Get encryption key from environment - required for production security
 const getEncryptionKey = (): string => {
   const key = import.meta.env.VITE_ENCRYPTION_KEY;
   if (!key) {
-    console.warn('VITE_ENCRYPTION_KEY not set. Using default key. THIS IS NOT SECURE FOR PRODUCTION!');
-    return 'default-insecure-key-change-in-production';
+    // For demo/development, use a warning and default key
+    // In production, this should throw an error
+    if (import.meta.env.MODE === 'production') {
+      throw new Error('VITE_ENCRYPTION_KEY environment variable must be set in production');
+    }
+    console.warn('VITE_ENCRYPTION_KEY not set. Using default key for development only.');
+    return 'dev-default-key-not-for-production-use';
   }
   return key;
 };
@@ -88,11 +93,21 @@ export const removeApiKey = (userId: string): void => {
 };
 
 /**
- * Validate API key format (basic validation)
+ * Validate API key format
  * @param apiKey - The API key to validate
  * @returns True if valid format
  */
 export const validateApiKey = (apiKey: string): boolean => {
-  // Basic validation: non-empty, reasonable length
-  return apiKey.length >= 20 && apiKey.length <= 256;
+  // Basic validation: non-empty, reasonable length, and alphanumeric+special chars
+  if (!apiKey || apiKey.length < 20 || apiKey.length > 256) {
+    return false;
+  }
+  
+  // Must contain at least some alphanumeric characters (not just spaces)
+  const hasContent = /[a-zA-Z0-9]/.test(apiKey);
+  
+  // Should not contain obviously invalid characters like control characters
+  const hasInvalidChars = /[\x00-\x1F\x7F]/.test(apiKey);
+  
+  return hasContent && !hasInvalidChars;
 };

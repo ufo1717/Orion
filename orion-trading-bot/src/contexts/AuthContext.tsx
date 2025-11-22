@@ -65,6 +65,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Initialize tier from storage or Auth0
   const [userTier, setUserTier] = useState<UserTier>(() => getInitialTier(user));
+  
+  // Update userTier when user changes (e.g., from null to actual user)
+  React.useEffect(() => {
+    if (user) {
+      const tier = getInitialTier(user);
+      setUserTier(tier);
+    }
+  }, [user]);
 
   // In demo mode, treat user as authenticated
   const isAuthenticated = demoModeActive ? true : auth0IsAuthenticated;
