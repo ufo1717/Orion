@@ -1,0 +1,43 @@
+name = "orion-api"
+main = "workers/api/index.ts"
+compatibility_date = "2025-11-22"
+
+# Pages configuration
+pages_build_output_dir = "orion-trading-bot/dist"
+
+# D1 Database binding
+# After creating D1 database, uncomment and add your database ID:
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "orion-trading-db"
+# database_id = "your-d1-database-id"
+
+# KV Namespaces
+# After creating KV namespaces, uncomment and add your namespace IDs:
+# [[kv_namespaces]]
+# binding = "SESSIONS"
+# id = "your-sessions-kv-id"
+
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-cache-kv-id"
+
+# Analytics Engine
+[[analytics_engine_datasets]]
+binding = "ANALYTICS"
+
+# Environment variables (non-sensitive)
+# Note: Update API_URL after deployment to match your actual Cloudflare Workers subdomain
+# Production URL format: https://orion-api.<your-subdomain>.workers.dev
+# Or use a custom domain after configuration
+[env.production]
+vars = { ENVIRONMENT = "production", API_URL = "https://orion-api.workers.dev" }
+
+[env.preview]
+vars = { ENVIRONMENT = "preview", API_URL = "https://orion-api.workers.dev" }
+
+# Secrets (set via CLI)
+# npx wrangler secret put JWT_SECRET --env production
+# npx wrangler secret put BINANCE_API_KEY --env production
+# npx wrangler secret put JWT_SECRET --env preview
+# npx wrangler secret put BINANCE_API_KEY --env preview

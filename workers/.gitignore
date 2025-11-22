@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.dev.vars
+.env
+
+# Wrangler
+.wrangler/
+
+# Build output
+dist/

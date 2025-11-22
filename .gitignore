@@ -1,15 +1,24 @@
 # Dependencies
 node_modules/
 aura-trading-bot/node_modules/
+orion-trading-bot/node_modules/
+workers/node_modules/
 
 # Build outputs
 aura-trading-bot/dist/
 aura-trading-bot/.vite/
+orion-trading-bot/dist/
+orion-trading-bot/.vite/
 
 # Environment files
 .env
 .env.local
 .env.*.local
+
+# Cloudflare
+.wrangler/
+.dev.vars
+wrangler.toml.bak
 
 # Logs
 *.log

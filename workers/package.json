@@ -1,0 +1,27 @@
+{
+  "name": "orion-workers",
+  "version": "1.0.0",
+  "description": "Cloudflare Workers API for Orion Trading Bot",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "deploy:production": "wrangler deploy --env production",
+    "deploy:preview": "wrangler deploy --env preview",
+    "dev": "wrangler dev",
+    "tail": "wrangler tail",
+    "tail:production": "wrangler tail --env production",
+    "tail:preview": "wrangler tail --env preview"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "serverless",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "wrangler": "^3.95.0"
+  }
+}
