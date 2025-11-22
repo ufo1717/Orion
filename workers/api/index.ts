@@ -121,12 +121,13 @@ async function verifyToken(token: string, secret: string) {
     }
     
     const data = encoder.encode(`${headerB64}.${payloadB64}`);
-    const signature = Uint8Array.from(atob(signatureB64), c => c.charCodeAt(0));
+    const signatureStr = base64UrlDecode(signatureB64);
+    const signature = Uint8Array.from(signatureStr, c => c.charCodeAt(0));
     
     const valid = await crypto.subtle.verify('HMAC', key, signature, data);
     if (!valid) return null;
     
-    const payload = JSON.parse(atob(payloadB64));
+    const payload = JSON.parse(base64UrlDecode(payloadB64));
     if (payload.exp < Date.now() / 1000) return null;
     
     return payload;
@@ -142,8 +143,8 @@ async function generateToken(payload: any, secret: string): Promise<string> {
   const claims = { ...payload, iat: now, exp: now + 3600 }; // 1 hour expiry
   
   const encoder = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, '');
-  const payloadB64 = btoa(JSON.stringify(claims)).replace(/=/g, '');
+  const headerB64 = base64UrlEncode(JSON.stringify(header));
+  const payloadB64 = base64UrlEncode(JSON.stringify(claims));
   const data = encoder.encode(`${headerB64}.${payloadB64}`);
   
   const key = await crypto.subtle.importKey(
@@ -155,17 +156,61 @@ async function generateToken(payload: any, secret: string): Promise<string> {
   );
   
   const signature = await crypto.subtle.sign('HMAC', key, data);
-  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature))).replace(/=/g, '');
+  const signatureB64 = base64UrlEncode(new Uint8Array(signature));
   
   return `${headerB64}.${payloadB64}.${signatureB64}`;
 }
 
-// Password hashing with Web Crypto API
+// Base64 URL encoding (URL-safe, no padding)
+function base64UrlEncode(data: string | Uint8Array): string {
+  let base64: string;
+  if (typeof data === 'string') {
+    base64 = btoa(data);
+  } else {
+    base64 = btoa(String.fromCharCode(...data));
+  }
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+// Base64 URL decoding
+function base64UrlDecode(str: string): string {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) {
+    str += '=';
+  }
+  return atob(str);
+}
+
+// Password hashing with PBKDF2 (secure alternative to plain SHA-256)
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const passwordData = encoder.encode(password);
+  
+  // Generate a salt (in production, store this per-user; for now using a deterministic approach)
+  const salt = await crypto.subtle.digest('SHA-256', encoder.encode('orion-salt-v1'));
+  
+  // Import password as key material
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    passwordData,
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+  
+  // Derive key using PBKDF2 with 100,000 iterations
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    256 // 256 bits = 32 bytes
+  );
+  
+  const hashArray = Array.from(new Uint8Array(derivedBits));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 

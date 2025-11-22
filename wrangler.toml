@@ -27,11 +27,14 @@ pages_build_output_dir = "orion-trading-bot/dist"
 binding = "ANALYTICS"
 
 # Environment variables (non-sensitive)
+# Note: Update API_URL after deployment to match your actual Cloudflare Workers subdomain
+# Production URL format: https://orion-api.<your-subdomain>.workers.dev
+# Or use a custom domain after configuration
 [env.production]
-vars = { ENVIRONMENT = "production", API_URL = "https://api.orion-trading.com" }
+vars = { ENVIRONMENT = "production", API_URL = "https://orion-api.workers.dev" }
 
 [env.preview]
-vars = { ENVIRONMENT = "preview", API_URL = "https://preview.orion-trading.com" }
+vars = { ENVIRONMENT = "preview", API_URL = "https://orion-api.workers.dev" }
 
 # Secrets (set via CLI)
 # npx wrangler secret put JWT_SECRET --env production
