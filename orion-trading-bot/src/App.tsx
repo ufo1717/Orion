@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { AuthProvider, useAuthContext } from './contexts/AuthContext';
 import { MarketDataProvider } from './contexts/MarketDataContext';
@@ -7,9 +8,10 @@ import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { CedrickApp } from './components/cedrick-logging';
 import './App.css';
 
-function AppContent() {
+function TradingBotContent() {
   const { isLoading } = useApp();
   const { isAuthenticated } = useAuthContext();
   const [showOnboarding, setShowOnboarding] = useState(true);
@@ -32,17 +34,31 @@ function AppContent() {
   );
 }
 
-function App() {
+function TradingBotApp() {
   return (
     <AuthProvider>
       <AppProvider>
         <MarketDataProvider>
           <MarketRegimeProvider>
-            <AppContent />
+            <TradingBotContent />
           </MarketRegimeProvider>
         </MarketDataProvider>
       </AppProvider>
     </AuthProvider>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Cedrick Logging Website */}
+        <Route path="/cedrick-logging" element={<CedrickApp />} />
+        
+        {/* Original Trading Bot (default route) */}
+        <Route path="/*" element={<TradingBotApp />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
