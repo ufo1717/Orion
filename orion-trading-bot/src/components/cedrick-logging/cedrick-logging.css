@@ -8,7 +8,11 @@
    - Environmental Signal: Blue Sky imagery
    ================================================ */
 
-/* Import Fonts */
+/* 
+ * Import Fonts with font-display: swap for better performance.
+ * Fallback fonts (system fonts) are defined in the font-family declarations
+ * to prevent layout shifts during font loading.
+ */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto+Slab:wght@400;500;600;700;800&display=swap');
 
 /* ================================================

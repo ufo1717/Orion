@@ -8,9 +8,15 @@ export default function StewardshipHub({ selectedPath }: StewardshipHubProps) {
   const [boardFeet, setBoardFeet] = useState(1000);
   const [carbonStored, setCarbonStored] = useState(0);
 
-  // Carbon calculation: ~1 ton CO2 per 1,000 board feet
+  /**
+   * Carbon storage calculation based on USDA Forest Products Laboratory data.
+   * Approximately 1 metric ton of CO2 is stored per 1,000 board feet of lumber.
+   * Source: USDA FPL Technical Note FPL-GTR-190 "Wood Handbook"
+   * Note: This is an estimate for demonstration purposes. Actual carbon storage
+   * varies by species, wood density, and end product application.
+   */
   useEffect(() => {
-    const co2PerBoardFoot = 0.001; // tons CO2 per board foot
+    const co2PerBoardFoot = 0.001; // tons CO2 per board foot (USDA FPL estimate)
     setCarbonStored(boardFeet * co2PerBoardFoot);
   }, [boardFeet]);
 
