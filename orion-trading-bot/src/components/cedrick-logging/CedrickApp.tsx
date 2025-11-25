@@ -3,6 +3,8 @@ import Hero from './Hero';
 import ProcessSection from './ProcessSection';
 import StewardshipHub from './StewardshipHub';
 import CedrickFactor from './CedrickFactor';
+import OriginStory from './OriginStory';
+import InvestorPortal from './InvestorPortal';
 import HarvestEstimator from './HarvestEstimator';
 import Footer from './Footer';
 import './cedrick-logging.css';
@@ -27,13 +29,14 @@ export default function CedrickApp() {
         <div className="nav-container">
           <div className="nav-logo">
             <span className="logo-text">CEDRICK</span>
-            <span className="logo-subtext">LOGGING</span>
+            <span className="logo-subtext">FORESTRY LOGGING</span>
           </div>
           <div className="nav-links">
             <a href="#hero" className="nav-link">Home</a>
             <a href="#process" className="nav-link">Process</a>
             <a href="#stewardship" className="nav-link">Sustainability</a>
-            <a href="#about" className="nav-link">About Cedrick</a>
+            <a href="#origin" className="nav-link">Our Story</a>
+            <a href="#investors" className="nav-link">Investors</a>
             <button
               className="nav-cta"
               onClick={() => setShowEstimator(true)}
@@ -57,6 +60,8 @@ export default function CedrickApp() {
         <ProcessSection selectedPath={selectedPath} />
         <StewardshipHub selectedPath={selectedPath} />
         <CedrickFactor />
+        <OriginStory />
+        <InvestorPortal />
       </main>
 
       {/* Harvest Estimator Modal */}
