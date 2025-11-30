@@ -9,6 +9,7 @@ import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { CedrickApp } from './components/cedrick-logging';
+import { CapWheelApp } from './components/capwheel';
 import './App.css';
 
 function TradingBotContent() {
@@ -52,6 +53,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* CapWheel Enterprise Trading Platform */}
+        <Route path="/capwheel/*" element={<CapWheelApp />} />
+        
         {/* Cedrick Logging Website */}
         <Route path="/cedrick-logging" element={<CedrickApp />} />
         
