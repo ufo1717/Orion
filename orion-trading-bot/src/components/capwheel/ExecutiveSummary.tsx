@@ -78,6 +78,13 @@ const MetricCard: React.FC<MetricCardProps> = ({
   );
 };
 
+// Metric animation constants
+const METRIC_UPDATE_INTERVAL_MS = 3000;
+const PNL_VOLATILITY_FACTOR = 1000;
+const PNL_BIAS = 0.45; // Slight positive bias for realistic simulation
+const WIN_RATE_CHANGE_RANGE = 0.5;
+const VOLATILITY_CHANGE_RANGE = 0.2;
+
 const ExecutiveSummary: React.FC = () => {
   const { portfolioMetrics } = useCapWheel();
   const [animatedMetrics, setAnimatedMetrics] = useState(portfolioMetrics);
@@ -87,12 +94,12 @@ const ExecutiveSummary: React.FC = () => {
     const interval = setInterval(() => {
       setAnimatedMetrics(prev => ({
         ...prev,
-        dailyPnL: prev.dailyPnL + (Math.random() - 0.45) * 1000,
-        dailyPnLPercent: prev.dailyPnLPercent + (Math.random() - 0.45) * 0.01,
-        winRate: Math.min(100, Math.max(0, prev.winRate + (Math.random() - 0.5) * 0.5)),
-        volatilityCaptured: Math.max(0, prev.volatilityCaptured + (Math.random() - 0.5) * 0.2),
+        dailyPnL: prev.dailyPnL + (Math.random() - PNL_BIAS) * PNL_VOLATILITY_FACTOR,
+        dailyPnLPercent: prev.dailyPnLPercent + (Math.random() - PNL_BIAS) * 0.01,
+        winRate: Math.min(100, Math.max(0, prev.winRate + (Math.random() - 0.5) * WIN_RATE_CHANGE_RANGE)),
+        volatilityCaptured: Math.max(0, prev.volatilityCaptured + (Math.random() - 0.5) * VOLATILITY_CHANGE_RANGE),
       }));
-    }, 3000);
+    }, METRIC_UPDATE_INTERVAL_MS);
 
     return () => clearInterval(interval);
   }, []);

@@ -6,6 +6,10 @@ import { motion } from 'framer-motion';
 import { useCapWheel } from '../../contexts/CapWheelContext';
 import type { RWACategory } from '../../contexts/CapWheelContext';
 
+// Donut chart constants
+const DONUT_RADIUS = 70;
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS; // ~439.82
+
 const RWAHedgePanel: React.FC = () => {
   const { rwaPositions, hedgeMetrics, setAutoRebalance, totalRWAAllocation } = useCapWheel();
 
@@ -84,7 +88,7 @@ const RWAHedgePanel: React.FC = () => {
             {/* Allocation segments */}
             {rwaPositions.reduce((acc, pos, index) => {
               const offset = acc.offset;
-              const dashArray = (pos.allocation / 100) * 439.82; // 2 * PI * 70
+              const dashArray = (pos.allocation / 100) * DONUT_CIRCUMFERENCE;
               const dashOffset = -offset;
               
               acc.elements.push(
@@ -92,11 +96,11 @@ const RWAHedgePanel: React.FC = () => {
                   key={pos.category}
                   cx="90"
                   cy="90"
-                  r="70"
+                  r={DONUT_RADIUS}
                   fill="none"
                   stroke={getCategoryColor(pos.category)}
                   strokeWidth="20"
-                  strokeDasharray={`${dashArray} 439.82`}
+                  strokeDasharray={`${dashArray} ${DONUT_CIRCUMFERENCE}`}
                   strokeDashoffset={dashOffset}
                   transform="rotate(-90 90 90)"
                   style={{ transition: 'stroke-dasharray 0.5s ease' }}
