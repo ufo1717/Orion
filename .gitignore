@@ -4,7 +4,7 @@ aura-trading-bot/node_modules/
 orion-trading-bot/node_modules/
 workers/node_modules/
 
-# Build outputs
+# Build output
 aura-trading-bot/dist/
 aura-trading-bot/.vite/
 orion-trading-bot/dist/
