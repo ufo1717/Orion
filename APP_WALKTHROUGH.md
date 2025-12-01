@@ -14,7 +14,7 @@ This document provides a comprehensive walkthrough of the ORION Trading Bot appl
 
 ## Application Overview
 
-The ORION Trading Bot is an enterprise-grade, glassmorphism dark mode trading bot interface with hyper-realistic simulation of high-frequency trading activity. The application features:
+The ORION Trading Bot is an enterprise-grade, glassmorphism dark mode trading interface with hyper-realistic simulation of high-frequency trading activity. The application features:
 
 - **Three-tier access system** (Tier 1, 2, and 3)
 - **Three trading strategies** (FOUNDATIONAL, ADVANCED, PRIME)
