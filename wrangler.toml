@@ -1,15 +1,14 @@
 # wrangler.toml for Cloudflare Pages (Pages-focused)
-# Replace values below as needed.
+# Keeps the build command, and declares the built assets directory under [assets]
+# so Wrangler treats this as an assets/pages deploy (not a Worker deploy).
 
 name = "capwheel"
 compatibility_date = "2025-12-01"
 
 [build]
-# Command that builds your site (adjust if your project uses a different build script)
+# Command that builds your site
 command = "npm run build"
 
-# Directory with the built static files.
-directory = "dist"
-
-# Remove any Workers-only keys (analytics_engine_datasets, main, etc.) unless you also deploy Workers.
-# If you also deploy Workers, tell me and I'll include the Worker-specific config under a separate file/section.
+[assets]
+# Directory containing the built static files
+directory = "./dist"
